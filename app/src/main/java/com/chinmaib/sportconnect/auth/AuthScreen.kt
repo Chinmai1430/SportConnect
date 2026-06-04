@@ -47,6 +47,32 @@ val OpenSans = FontFamily(
     Font(R.font.open_sans_semi_bold, FontWeight.SemiBold)
 )
 
+// ALTRON INJECTION: Security State Matrix
+enum class PasswordStrength(val label: String, val color: Color, val progress: Float) {
+    NONE("", Color.Transparent, 0f),
+    WEAK("Weak", Color(0xFFE57373), 0.33f),      // Red
+    MODERATE("Moderate", Saffron, 0.66f),        // Orange/Yellow
+    STRONG("Strong", TurfGreen, 1f)              // Green
+}
+
+fun calculateStrength(password: String): PasswordStrength {
+    if (password.isEmpty()) return PasswordStrength.NONE
+
+    var score = 0
+    if (password.length >= 8) score++
+    if (password.any { it.isUpperCase() }) score++
+    if (password.any { it.isLowerCase() }) score++
+    if (password.any { it.isDigit() }) score++
+    if (password.any { !it.isLetterOrDigit() }) score++ // Special character check
+
+    return when {
+        score <= 2 -> PasswordStrength.WEAK
+        score in 3..4 -> PasswordStrength.MODERATE
+        score == 5 -> PasswordStrength.STRONG
+        else -> PasswordStrength.WEAK
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
@@ -58,7 +84,10 @@ fun AuthScreen(
 
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+
+    // Password States
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") } // ALTRON: New Confirm State
 
     var verifiedEmails by remember { mutableStateOf(setOf<String>()) }
     var isOtpFieldVisible by remember { mutableStateOf(false) }
@@ -223,19 +252,14 @@ fun AuthScreen(
                             }
                         )
 
-                        // ALTRON INJECTION: Re-engineered Standardized Resend Button
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp, end = 2.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp, end = 2.dp),
                             contentAlignment = Alignment.CenterEnd
                         ) {
                             if (timeLeft > 0) {
                                 Text(
-                                    text = "Resend OTP in ${timeLeft}s",
-                                    color = CoolTeal.copy(alpha = 0.8f),
-                                    fontSize = 13.sp,
-                                    fontFamily = OpenSans
+                                    text = "Resend OTP in ${timeLeft}s", color = CoolTeal.copy(alpha = 0.8f),
+                                    fontSize = 13.sp, fontFamily = OpenSans
                                 )
                             } else {
                                 OutlinedButton(
@@ -244,18 +268,11 @@ fun AuthScreen(
                                         isTimerActive = true
                                         viewModel.sendOtp(email.trim())
                                     },
-                                    modifier = Modifier.height(36.dp),
-                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.height(36.dp), shape = RoundedCornerShape(8.dp),
                                     border = BorderStroke(1.dp, Saffron.copy(alpha = 0.5f)),
                                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
                                 ) {
-                                    Text(
-                                        text = "RESEND OTP",
-                                        color = Saffron,
-                                        fontSize = 11.sp,
-                                        fontFamily = Montserrat,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Text("RESEND OTP", color = Saffron, fontSize = 11.sp, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -263,7 +280,56 @@ fun AuthScreen(
 
                     if (!isForgotPasswordMode) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        StyledTextField(value = password, onValueChange = { password = it }, label = "Password", isPassword = true)
+
+                        // ALTRON INJECTION: Dynamic Password Fields
+                        StyledTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = if (isLoginMode) "Password" else "Create Password",
+                            isPassword = true
+                        )
+
+                        // Strength UI (Only visible when creating an account and typing)
+                        if (!isLoginMode && password.isNotEmpty()) {
+                            val strength = calculateStrength(password)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = strength.label,
+                                    color = strength.color,
+                                    fontSize = 11.sp,
+                                    fontFamily = Montserrat,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.width(64.dp)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(4.dp)
+                                        .background(Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(strength.progress)
+                                            .height(4.dp)
+                                            .background(strength.color, RoundedCornerShape(2.dp))
+                                    )
+                                }
+                            }
+                        }
+
+                        // Confirm Password UI
+                        if (!isLoginMode) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            StyledTextField(
+                                value = confirmPassword,
+                                onValueChange = { confirmPassword = it },
+                                label = "Confirm Password",
+                                isPassword = true
+                            )
+                        }
                     }
 
                     if (isLoginMode && !isForgotPasswordMode) {
@@ -298,13 +364,19 @@ fun AuthScreen(
                                 }
                                 else -> {
                                     val nameRegex = Regex("^[a-zA-Z\\s]+\$")
+                                    val currentStrength = calculateStrength(password)
 
-                                    if (fullName.isBlank() || email.isBlank() || password.isBlank()) {
+                                    // ALTRON INJECTION: Strict Validation Gates
+                                    if (fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar("All fields are compulsory.") }
                                     } else if (!fullName.trim().matches(nameRegex)) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar("Invalid name. Only uppercase/lowercase letters and spaces are allowed.") }
                                     } else if (!isCurrentEmailVerified) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar("Please verify your email address first.") }
+                                    } else if (currentStrength != PasswordStrength.STRONG) {
+                                        coroutineScope.launch { snackbarHostState.showSnackbar("Password is not strong enough. Require 8+ chars, upper, lower, number, & symbol.") }
+                                    } else if (password != confirmPassword) {
+                                        coroutineScope.launch { snackbarHostState.showSnackbar("Passwords do not match.") }
                                     } else {
                                         viewModel.finalizeSignUp(password.trim())
                                     }
@@ -364,6 +436,9 @@ fun AuthScreen(
                                 isLoginMode = true
                             } else {
                                 isLoginMode = !isLoginMode
+                                // Reset fields when toggling modes
+                                password = ""
+                                confirmPassword = ""
                             }
                         }
                     ) {
