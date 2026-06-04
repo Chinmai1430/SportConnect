@@ -87,7 +87,7 @@ fun AuthScreen(
 
     // Password States
     var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") } // ALTRON: New Confirm State
+    var confirmPassword by remember { mutableStateOf("") }
 
     var verifiedEmails by remember { mutableStateOf(setOf<String>()) }
     var isOtpFieldVisible by remember { mutableStateOf(false) }
@@ -281,7 +281,6 @@ fun AuthScreen(
                     if (!isForgotPasswordMode) {
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // ALTRON INJECTION: Dynamic Password Fields
                         StyledTextField(
                             value = password,
                             onValueChange = { password = it },
@@ -289,7 +288,6 @@ fun AuthScreen(
                             isPassword = true
                         )
 
-                        // Strength UI (Only visible when creating an account and typing)
                         if (!isLoginMode && password.isNotEmpty()) {
                             val strength = calculateStrength(password)
                             Row(
@@ -320,7 +318,6 @@ fun AuthScreen(
                             }
                         }
 
-                        // Confirm Password UI
                         if (!isLoginMode) {
                             Spacer(modifier = Modifier.height(12.dp))
                             StyledTextField(
@@ -366,7 +363,6 @@ fun AuthScreen(
                                     val nameRegex = Regex("^[a-zA-Z\\s]+\$")
                                     val currentStrength = calculateStrength(password)
 
-                                    // ALTRON INJECTION: Strict Validation Gates
                                     if (fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar("All fields are compulsory.") }
                                     } else if (!fullName.trim().matches(nameRegex)) {
@@ -436,7 +432,6 @@ fun AuthScreen(
                                 isLoginMode = true
                             } else {
                                 isLoginMode = !isLoginMode
-                                // Reset fields when toggling modes
                                 password = ""
                                 confirmPassword = ""
                             }
@@ -457,6 +452,7 @@ fun AuthScreen(
     }
 }
 
+// ALTRON INJECTION: Replaced deprecated TextFieldDefaults with OutlinedTextFieldDefaults
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StyledTextField(
@@ -477,9 +473,14 @@ fun StyledTextField(
         keyboardOptions = KeyboardOptions(keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text),
         trailingIcon = trailingIcon,
         modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = TurfGreen, unfocusedBorderColor = TurfGreen.copy(alpha = 0.3f),
-            focusedTextColor = Color.White, unfocusedTextColor = Color.White, cursorColor = Saffron
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = TurfGreen,
+            unfocusedBorderColor = TurfGreen.copy(alpha = 0.3f),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            cursorColor = Saffron,
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent
         ),
         shape = RoundedCornerShape(12.dp),
         singleLine = true
