@@ -3,11 +3,11 @@ package com.chinmaib.sportconnect.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.gotrue.Auth
-import io.github.jan.supabase.gotrue.OtpType
-import io.github.jan.supabase.gotrue.providers.Google
-import io.github.jan.supabase.gotrue.providers.builtin.Email
-import io.github.jan.supabase.gotrue.providers.builtin.OTP // ALTRON: Supabase OTP Engine
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.OtpType
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.OTP // ALTRON: Supabase OTP Engine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,17 +15,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class AuthState {
-    object Idle : AuthState()
-    object Loading : AuthState()
-    object Success : AuthState()
-    object OtpSent : AuthState()       // UI Trigger: OTP Email dispatched
-    object OtpVerified : AuthState()   // UI Trigger: Blue tick unlocked
+    data object Idle : AuthState()
+    data object Loading : AuthState()
+    data object Success : AuthState()
+    data object OtpSent : AuthState()       // UI Trigger: OTP Email dispatched
+    data object OtpVerified : AuthState()   // UI Trigger: Blue tick unlocked
     data class Error(val message: String) : AuthState()
 }
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val auth: Auth
+    private val auth: Auth,
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -54,11 +54,11 @@ class AuthViewModel @Inject constructor(
                 auth.verifyEmailOtp(
                     type = OtpType.Email.MAGIC_LINK,
                     email = emailInput,
-                    token = otpInput
+                    token = otpInput,
                 )
                 _authState.value = AuthState.OtpVerified
             } catch (e: Exception) {
-                _authState.value = AuthState.Error("Invalid OTP. Please check the code and try again.")
+                _authState.value = AuthState.Error(e.message ?: "Invalid OTP. Please check the code and try again.")
             }
         }
     }
@@ -88,7 +88,7 @@ class AuthViewModel @Inject constructor(
                 }
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
-                _authState.value = AuthState.Error("Login failed. Check your credentials.")
+                _authState.value = AuthState.Error(e.message ?: "Login failed. Check your credentials.")
             }
         }
     }
@@ -106,7 +106,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun resetState() {
-        if (_authState.value is AuthState.Error || _authState.value is AuthState.OtpSent) {
+        if ((_authState.value is AuthState.Error) || (_authState.value is AuthState.OtpSent) || (_authState.value is AuthState.Success)) {
             _authState.value = AuthState.Idle
         }
     }

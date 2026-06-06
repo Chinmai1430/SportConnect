@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
 
     // Hilt and KSP Initializers
     alias(libs.plugins.hilt)
@@ -10,14 +9,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+@Suppress("DEPRECATION")
 android {
     namespace = "com.chinmaib.sportconnect"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.chinmaib.sportconnect"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -38,7 +38,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -46,12 +46,36 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+}
+
+// Correct DSL for AGP 9.0+ built-in Kotlin (must be outside the android block if using Project extension)
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // ALTRON FIX: Prevents colons in module names introduced in Kotlin 2.4.0 from breaking Hilt
+        freeCompilerArgs.add("-Xmodule-name=SportConnect_App")
     }
+}
+
+// ALTRON PATCH: Forces Hilt to use the newer metadata library to support Kotlin 2.4.0
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlinx" && requested.name == "kotlinx-metadata-jvm") {
+            useVersion("0.9.0")
+        }
+    }
+}
+
+android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    lint {
+        // ALTRON FIX: Silences the Kotlin 2.4.0 warning which currently breaks Dagger Hilt
+        disable.add("NewerVersionAvailable")
+        lintConfig = file("lint.xml")
     }
 }
 
@@ -60,11 +84,15 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.image.cropper)
 
     // Testing
     testImplementation(libs.junit)
@@ -82,10 +110,17 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
 
     // Supabase Database & Auth (BOM Architecture)
-    implementation(platform("io.github.jan-tennert.supabase:bom:2.4.3"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt")
-    implementation("io.github.jan-tennert.supabase:gotrue-kt")
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.auth)
 
     // Ktor HTTP Engine
-    implementation("io.ktor:ktor-client-okhttp:2.3.11")
+    implementation(libs.ktor.client.okhttp)
+
+    // ALTRON INJECTION: Coil Image Rendering Engine (Required for Profile Setup / Crop Matrix)
+    implementation(libs.coil.compose)
+
+    // Logging Implementation (Resolves SLF4J Warnings in Logcat)
+    implementation(libs.logback.android)
+    implementation(libs.kotlin.logging)
 }
