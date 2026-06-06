@@ -50,19 +50,16 @@ fun ProfileSetupScreen(
 ) {
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // ALTRON INJECTION: DOB Logic States
     var showDatePicker by remember { mutableStateOf(value = false) }
     val datePickerState = rememberDatePickerState()
     var selectedDob by remember { mutableStateOf("") }
 
-    // ALTRON INJECTION: Sports Engine States
     val availableSports = listOf("Football", "Basketball", "Cricket", "Volleyball", "Throwball", "Tennis", "Badminton", "Hockey", "Rugby", "Athletics", "Baseball")
     var sportsSearchQuery by remember { mutableStateOf("") }
     val selectedSports = remember { mutableStateListOf<String>() }
 
     val adjustProfileTitle = stringResource(R.string.adjust_profile_title)
 
-    // ALTRON INJECTION: Tier-1 Native Cropper Matrix
     val cropImageLauncher = rememberLauncherForActivityResult(contract = CropImageContract()) { result ->
         if (result.isSuccessful) {
             selectedImageUri = result.uriContent
@@ -71,7 +68,6 @@ fun ProfileSetupScreen(
 
     val photoPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
-            // Instantly transition picked photo to the Native WhatsApp-style cropper
             val cropOptions = CropImageContractOptions(
                 uri,
                 CropImageOptions(
@@ -81,8 +77,10 @@ fun ProfileSetupScreen(
                     aspectRatioY = 1,
                     toolbarColor = "#061710".toColorInt(),
                     activityTitle = adjustProfileTitle,
-                    // ALTRON INJECTION: Forces the "OK" checkmark and back arrow to be pure white
-                    activityMenuIconColor = android.graphics.Color.WHITE
+                    activityMenuIconColor = android.graphics.Color.WHITE,
+                    // ALTRON INJECTION: Re-attached the required fallback commands to force the SAVE button
+                    cropMenuCropButtonTitle = "SAVE",
+                    backgroundColor = "#061710".toColorInt()
                 )
             )
             cropImageLauncher.launch(cropOptions)
@@ -97,7 +95,7 @@ fun ProfileSetupScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()) // Permits scrolling for extended form data
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -123,7 +121,6 @@ fun ProfileSetupScreen(
                 modifier = Modifier.padding(top = 8.dp, bottom = 40.dp)
             )
 
-            // The Profile Avatar Core
             Box(
                 modifier = Modifier
                     .size(140.dp)
@@ -154,7 +151,6 @@ fun ProfileSetupScreen(
                 }
             }
 
-            // ALTRON INJECTION: Dynamic Username parsed from Auth Screen
             Text(
                 text = userName.ifBlank { stringResource(R.string.new_athlete_default) },
                 color = Color.White,
@@ -164,7 +160,6 @@ fun ProfileSetupScreen(
                 modifier = Modifier.padding(top = 24.dp, bottom = 32.dp)
             )
 
-            // Extended Detail Form Matrix
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -174,7 +169,6 @@ fun ProfileSetupScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
 
-                // DOB Field Trigger
                 Box(modifier = Modifier.fillMaxWidth()) {
                     StyledTextField(
                         value = selectedDob,
@@ -183,13 +177,11 @@ fun ProfileSetupScreen(
                         placeholder = stringResource(R.string.dob_placeholder),
                         trailingIcon = { Icon(imageVector = Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.select_date_desc), tint = CoolTeal.copy(alpha = 0.7f)) }
                     )
-                    // Invisible interception layer to pop the calendar instead of the keyboard
                     Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true }.background(Color.Transparent))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Sports Autocomplete Field
                 StyledTextField(
                     value = sportsSearchQuery,
                     onValueChange = { sportsSearchQuery = it },
@@ -197,7 +189,6 @@ fun ProfileSetupScreen(
                     placeholder = stringResource(R.string.sports_placeholder)
                 )
 
-                // Sports Autocomplete Suggestions Dropdown
                 if (sportsSearchQuery.isNotEmpty()) {
                     val filtered = availableSports.filter { (it.contains(other = sportsSearchQuery, ignoreCase = true)) && (!selectedSports.contains(it)) }
                     if (filtered.isNotEmpty()) {
@@ -216,7 +207,7 @@ fun ProfileSetupScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 selectedSports.add(sport)
-                                                sportsSearchQuery = "" // Reset field after selection
+                                                sportsSearchQuery = ""
                                             }
                                             .padding(12.dp)
                                     )
@@ -226,7 +217,6 @@ fun ProfileSetupScreen(
                     }
                 }
 
-                // LinkedIn Style Activity Chips
                 if (selectedSports.isNotEmpty()) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -249,7 +239,6 @@ fun ProfileSetupScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Database Submission Vector
             Button(
                 onClick = { onComplete(selectedImageUri, selectedDob, selectedSports.toList()) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -262,7 +251,6 @@ fun ProfileSetupScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
 
-        // Material 3 Calendar Overlay Matrix
         if (showDatePicker) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },

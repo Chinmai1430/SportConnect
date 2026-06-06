@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme -->
     <style name="Theme.SportConnect" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Customize your theme here -->
+    </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#061710</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/pitchup_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.SportConnect</item>
+    </style>
+
+    <style name="Theme.Cropper" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">#061710</item>
+        <item name="colorPrimaryDark">#061710</item>
+        <item name="colorAccent">#F4A261</item>
+        <item name="actionMenuTextColor">#FFFFFF</item>
+        <item name="android:actionMenuTextColor">#FFFFFF</item>
     </style>
 </resources>
