@@ -45,6 +45,7 @@ import java.util.TimeZone
 
 enum class SetupStep {
     PROFILE_INFO,
+    SPORTS_SELECTION,
     PLAYER_SELECTION
 }
 
@@ -63,7 +64,7 @@ fun ProfileSetupScreen(
     val selectedSports = remember { mutableStateListOf<String>() }
     val selectedPlayers = remember { mutableStateListOf<String>() }
 
-    val availableSports = listOf("Football", "Basketball", "Cricket", "Volleyball", "Tennis", "Badminton", "Hockey", "Rugby")
+    val availableSports = listOf("Football", "Basketball", "Cricket", "Volleyball", "Tennis", "Badminton", "Hockey", "Throw ball")
 
     // Mock Data for Famous Players
     @Suppress("SpellCheckingInspection")
@@ -96,8 +97,14 @@ fun ProfileSetupScreen(
                     onImageSelected = { selectedImageUri = it },
                     selectedDob = selectedDob,
                     onDobSelected = { selectedDob = it },
+                    onNext = { currentStep = SetupStep.SPORTS_SELECTION }
+                )
+            }
+            SetupStep.SPORTS_SELECTION -> {
+                SportsSelectionStep(
                     availableSports = availableSports,
                     selectedSports = selectedSports,
+                    onBack = { currentStep = SetupStep.PROFILE_INFO },
                     onNext = { currentStep = SetupStep.PLAYER_SELECTION }
                 )
             }
@@ -105,7 +112,7 @@ fun ProfileSetupScreen(
                 PlayerSelectionStep(
                     players = filteredPlayers,
                     selectedPlayers = selectedPlayers,
-                    onBack = { currentStep = SetupStep.PROFILE_INFO },
+                    onBack = { currentStep = SetupStep.SPORTS_SELECTION },
                     onFinish = { onComplete(selectedImageUri, selectedDob, selectedSports.toList()) }
                 )
             }
@@ -113,7 +120,7 @@ fun ProfileSetupScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileInfoStep(
     userName: String,
@@ -121,8 +128,6 @@ fun ProfileInfoStep(
     onImageSelected: (Uri?) -> Unit,
     selectedDob: String,
     onDobSelected: (String) -> Unit,
-    availableSports: List<String>,
-    selectedSports: MutableList<String>,
     onNext: () -> Unit
 ) {
     val showDatePicker = remember { mutableStateOf(false) }
@@ -242,49 +247,13 @@ fun ProfileInfoStep(
                 )
                 Box(modifier = Modifier.matchParentSize().clickable { showDatePicker.value = true }.background(Color.Transparent))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = stringResource(R.string.sports_label),
-                color = CoolTeal,
-                fontFamily = Montserrat,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(bottom = 16.dp, start = 4.dp)
-            )
-
-            // Spotify-style Visual Grid for Sports
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                availableSports.forEach { sport ->
-                    val isSelected = selectedSports.contains(sport)
-
-                    VisualSelectionCard(
-                        name = sport,
-                        isSelected = isSelected,
-                        onClick = {
-                            if (isSelected) {
-                                selectedSports.remove(sport)
-                            } else {
-                                selectedSports.add(sport)
-                            }
-                        }
-                    )
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
 
         Button(
             onClick = onNext,
-            enabled = selectedSports.isNotEmpty(),
+            enabled = selectedDob.isNotBlank(),
             modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Saffron, contentColor = DeepForestNightEnd),
             shape = RoundedCornerShape(12.dp),
@@ -333,6 +302,96 @@ fun ProfileInfoStep(
                 ),
             )
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun SportsSelectionStep(
+    availableSports: List<String>,
+    selectedSports: MutableList<String>,
+    onBack: () -> Unit,
+    onNext: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "CHOOSE SPORTS",
+            color = Color.White,
+            fontSize = 32.sp,
+            fontFamily = Montserrat,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 2.sp,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "SELECT THE SPORTS YOU ARE INTERESTED IN",
+            color = CoolTeal,
+            fontSize = 10.sp,
+            fontFamily = Montserrat,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(top = 8.dp, bottom = 40.dp)
+        )
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            availableSports.forEach { sport ->
+                val isSelected = selectedSports.contains(sport)
+
+                VisualSelectionCard(
+                    name = sport,
+                    isSelected = isSelected,
+                    onClick = {
+                        if (isSelected) {
+                            selectedSports.remove(sport)
+                        } else {
+                            selectedSports.add(sport)
+                        }
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Saffron.copy(alpha = 0.5f))
+            ) {
+                Text(text = "BACK", color = Saffron, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+            }
+
+            Button(
+                onClick = onNext,
+                enabled = selectedSports.isNotEmpty(),
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Saffron, contentColor = DeepForestNightEnd),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(text = "CONTINUE", fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
