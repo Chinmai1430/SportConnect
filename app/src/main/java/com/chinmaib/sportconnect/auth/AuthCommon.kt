@@ -20,14 +20,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.chinmaib.sportconnect.R
-
-// Shared Colors
-val DeepForestNightStart = Color(0xFF112E21)
-val DeepForestNightEnd = Color(0xFF061710)
-val Saffron = Color(0xFFF4A261)
-val TurfGreen = Color(0xFF3C8C5A)
-val CoolTeal = Color(0xFF74C2BD)
-val VerifiedBlue = Color(0xFF1DA1F2)
+import com.chinmaib.sportconnect.ui.theme.*
 
 // Shared Fonts
 val Montserrat = FontFamily(
@@ -41,11 +34,11 @@ val OpenSans = FontFamily(
 )
 
 // Shared Utilities
-enum class PasswordStrength(val label: String, val color: Color, val progress: Float) {
-    NONE("", Color.Transparent, 0f),
-    WEAK("Weak", Color(0xFFE57373), 0.33f),
-    MODERATE("Moderate", Saffron, 0.66f),
-    STRONG("Strong", TurfGreen, 1f)
+enum class PasswordStrength(val labelResId: Int?, val color: Color, val progress: Float) {
+    NONE(null, Color.Transparent, 0f),
+    WEAK(R.string.password_strength_weak, Color(0xFFE57373), 0.33f),
+    MODERATE(R.string.password_strength_moderate, Saffron, 0.66f),
+    STRONG(R.string.password_strength_strong, TurfGreen, 1f)
 }
 
 fun calculateStrength(password: String): PasswordStrength {

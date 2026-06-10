@@ -41,7 +41,7 @@ class AuthViewModel @Inject constructor(
                 }
                 _authState.value = AuthState.OtpSent
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Failed to send OTP. Check email format.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send OTP. Check email format.")
             }
         }
     }
@@ -52,13 +52,13 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Loading
             try {
                 auth.verifyEmailOtp(
-                    type = OtpType.Email.MAGIC_LINK,
+                    type = OtpType.Email.EMAIL,
                     email = emailInput,
                     token = otpInput,
                 )
                 _authState.value = AuthState.OtpVerified
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Invalid OTP. Please check the code and try again.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Invalid OTP. Please check the code and try again.")
             }
         }
     }
@@ -73,7 +73,7 @@ class AuthViewModel @Inject constructor(
                 }
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Failed to finalize account.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to finalize account.")
             }
         }
     }
@@ -88,7 +88,7 @@ class AuthViewModel @Inject constructor(
                 }
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Login failed. Check your credentials.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Login failed. Check your credentials.")
             }
         }
     }
@@ -100,7 +100,7 @@ class AuthViewModel @Inject constructor(
                 auth.signInWith(Google)
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Google Sign-In canceled or failed.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Google Sign-In canceled or failed.")
             }
         }
     }

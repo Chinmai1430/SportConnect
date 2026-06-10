@@ -2,14 +2,11 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-
-    // Hilt and KSP Initializers
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
 }
 
-@Suppress("DEPRECATION")
 android {
     namespace = "com.chinmaib.sportconnect"
     compileSdk = 37
@@ -42,40 +39,38 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-}
 
-// Correct DSL for AGP 9.0+ built-in Kotlin (must be outside the android block if using Project extension)
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        // ALTRON FIX: Prevents colons in module names introduced in Kotlin 2.4.0 from breaking Hilt
-        freeCompilerArgs.add("-Xmodule-name=SportConnect_App")
-    }
-}
-
-// ALTRON PATCH: Forces Hilt to use the newer metadata library to support Kotlin 2.4.0
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.jetbrains.kotlinx" && requested.name == "kotlinx-metadata-jvm") {
-            useVersion("0.9.0")
-        }
-    }
-}
-
-android {
     buildFeatures {
         compose = true
         buildConfig = true
     }
 
     lint {
-        // ALTRON FIX: Silences the Kotlin 2.4.0 warning which currently breaks Dagger Hilt
+        // Silences the Kotlin 2.4.0 warning which currently breaks Dagger Hilt
         disable.add("NewerVersionAvailable")
         lintConfig = file("lint.xml")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // Prevents colons in module names introduced in Kotlin 2.4.0 from breaking Hilt
+        freeCompilerArgs.add("-Xmodule-name=SportConnect_App")
+    }
+}
+
+// Forces Hilt to use the newer metadata library to support Kotlin 2.4.0
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlinx" && requested.name == "kotlinx-metadata-jvm") {
+            useVersion("0.9.0")
+        }
     }
 }
 
@@ -117,10 +112,10 @@ dependencies {
     // Ktor HTTP Engine
     implementation(libs.ktor.client.okhttp)
 
-    // ALTRON INJECTION: Coil Image Rendering Engine (Required for Profile Setup / Crop Matrix)
+    // Coil Image Rendering Engine
     implementation(libs.coil.compose)
 
-    // Logging Implementation (Resolves SLF4J Warnings in Logcat)
+    // Logging Implementation
     implementation(libs.logback.android)
     implementation(libs.kotlin.logging)
 }

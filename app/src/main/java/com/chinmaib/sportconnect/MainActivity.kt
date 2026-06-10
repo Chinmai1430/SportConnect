@@ -12,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
@@ -25,6 +24,7 @@ import com.chinmaib.sportconnect.ui.theme.SportConnectTheme
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Suppress("DEPRECATION")
 @Composable
 fun SportConnectNavigation() {
     val navController = rememberNavController()
@@ -67,19 +66,17 @@ fun SportConnectNavigation() {
                     }
                 } else {
                     // Safely encode the name for URL transit
-                    val safeName = if (userName.isNotBlank()) URLEncoder.encode(userName, "UTF-8") else "Athlete"
+                    val safeName = if (userName.isNotBlank()) URLEncoder.encode(userName, StandardCharsets.UTF_8.toString()) else "Athlete"
                     navController.navigate("profile_setup/$safeName")
                 }
             }
         }
 
-        // ALTRON INJECTION: Dynamic routing parameter added
         composable("profile_setup/{userName}") { backStackEntry ->
             val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
-            val userName = URLDecoder.decode(encodedName, "UTF-8")
+            val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
 
             ProfileSetupScreen(userName = userName) { _, _, _ ->
-                // WE WILL WIRE THESE 3 VARIABLES TO SUPABASE LATER
                 navController.navigate("home") {
                     popUpTo("auth") { inclusive = true }
                     popUpTo("profile_setup/{userName}") { inclusive = true }
@@ -89,7 +86,10 @@ fun SportConnectNavigation() {
 
         composable("home") {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = stringResource(R.string.welcome_home), color = Color.Black)
+                Text(
+                    text = stringResource(R.string.welcome_home),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
     }

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chinmaib.sportconnect.R
+import com.chinmaib.sportconnect.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

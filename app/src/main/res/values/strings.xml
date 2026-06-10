@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">SportConnect</string>
+    <string name="sportconnect_caps">SPORTCONNECT</string>
     <string name="gear_up">GEAR UP</string>
     <string name="establish_identity">ESTABLISH YOUR IDENTITY</string>
     <string name="upload">UPLOAD</string>
@@ -56,4 +57,9 @@
     <string name="password_too_weak">Password is not strong enough. Require 8+ chars, upper, lower, number, &amp; symbol.</string>
     <string name="passwords_do_not_match">Passwords do not match.</string>
     <string name="fields_compulsory">All fields are compulsory.</string>
+
+    <!-- Password Strength -->
+    <string name="password_strength_weak">Weak</string>
+    <string name="password_strength_moderate">Moderate</string>
+    <string name="password_strength_strong">Strong</string>
 </resources>

@@ -23,14 +23,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
 import com.chinmaib.sportconnect.R
+import com.chinmaib.sportconnect.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
-    // ALTRON INJECTION: Added userName to the output signal
     onAuthSuccess: (isLogin: Boolean, userName: String) -> Unit,
 ) {
     var isLoginMode by remember { mutableStateOf(value = true) }
@@ -132,7 +131,7 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
-                        text = "SPORTCONNECT",
+                        text = stringResource(R.string.sportconnect_caps),
                         color = Color.White,
                         fontSize = 24.sp,
                         fontFamily = Montserrat,
@@ -272,7 +271,7 @@ fun AuthScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = strength.label,
+                                    text = strength.labelResId?.let { stringResource(it) } ?: "",
                                     color = strength.color,
                                     fontSize = 11.sp,
                                     fontFamily = Montserrat,
@@ -375,7 +374,7 @@ fun AuthScreen(
                         }
                     }
 
-                    if (!isForgotPasswordMode) {
+                    if (isLoginMode && !isForgotPasswordMode) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
                             verticalAlignment = Alignment.CenterVertically,
