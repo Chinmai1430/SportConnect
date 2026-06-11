@@ -32,8 +32,8 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onAuthSuccess: (isLogin: Boolean, userName: String) -> Unit,
 ) {
-    var isLoginMode by remember { mutableStateOf(value = true) }
-    var isForgotPasswordMode by remember { mutableStateOf(value = false) }
+    var isLoginMode by remember { mutableStateOf(true) }
+    var isForgotPasswordMode by remember { mutableStateOf(false) }
 
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -42,18 +42,18 @@ fun AuthScreen(
     var confirmPassword by remember { mutableStateOf("") }
 
     var verifiedEmails by remember { mutableStateOf(setOf<String>()) }
-    var isOtpFieldVisible by remember { mutableStateOf(value = false) }
+    var isOtpFieldVisible by remember { mutableStateOf(false) }
     var otpInput by remember { mutableStateOf("") }
 
     var timeLeft by remember { mutableIntStateOf(60) }
-    var isTimerActive by remember { mutableStateOf(value = false) }
+    var isTimerActive by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     val isCurrentEmailVerified = verifiedEmails.contains(email.trim())
-    val isEmailReadyToVerify = email.trim().endsWith("@gmail.com")
+    val isEmailReadyToVerify = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
 
     LaunchedEffect(isTimerActive, timeLeft) {
         if ((isTimerActive) && (timeLeft > 0)) {
@@ -76,7 +76,8 @@ fun AuthScreen(
     val recoveryTokenSentTemplate = stringResource(R.string.recovery_token_sent)
 
     LaunchedEffect(authState) {
-        when (authState) {
+        val currentAuthState = authState
+        when (currentAuthState) {
             is AuthState.Success -> {
                 // ALTRON INJECTION: Routing the user's name forward
                 onAuthSuccess(isLoginMode, fullName.trim())
@@ -94,7 +95,7 @@ fun AuthScreen(
                 viewModel.resetState()
             }
             is AuthState.Error -> {
-                snackbarHostState.showSnackbar((authState as AuthState.Error).message)
+                snackbarHostState.showSnackbar(currentAuthState.message)
                 viewModel.resetState()
             }
             else -> {}

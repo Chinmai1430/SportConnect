@@ -76,7 +76,7 @@ fun SportConnectNavigation() {
             val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
             val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
 
-            ProfileSetupScreen(userName = userName) { _, _, _ ->
+            ProfileSetupScreen(userName = userName) { _, _, _, _, _ ->
                 navController.navigate("home") {
                     popUpTo("auth") { inclusive = true }
                     popUpTo("profile_setup/{userName}") { inclusive = true }

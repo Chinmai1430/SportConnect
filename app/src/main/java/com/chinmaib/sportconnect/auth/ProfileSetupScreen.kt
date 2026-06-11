@@ -2,292 +2,244 @@
 package com.chinmaib.sportconnect.auth
 
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import com.canhub.cropper.CropImageContract
-import com.canhub.cropper.CropImageContractOptions
-import com.canhub.cropper.CropImageOptions
-import com.canhub.cropper.CropImageView
-import androidx.compose.ui.res.stringResource
-import androidx.core.graphics.toColorInt
-import com.chinmaib.sportconnect.R
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import com.chinmaib.sportconnect.auth.components.PlayerSelectionStep
+import com.chinmaib.sportconnect.auth.components.ProfileInfoStep
+import com.chinmaib.sportconnect.auth.components.SportsSelectionStep
+import com.chinmaib.sportconnect.ui.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+enum class SetupStep {
+    PROFILE_INFO,
+    SPORTS_SELECTION,
+    PLAYER_SELECTION
+}
+
+data class FamousPlayer(val name: String, val sport: String, val imageUrl: String? = null)
+data class Sport(val name: String, val imageUrl: String)
+
 @Composable
 fun ProfileSetupScreen(
     userName: String,
-    onComplete: (Uri?, String, List<String>) -> Unit,
+    onComplete: (Uri?, String, String, List<String>, List<String>) -> Unit,
 ) {
+    var currentStep by remember { mutableStateOf(SetupStep.PROFILE_INFO) }
+
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    var showDatePicker by remember { mutableStateOf(value = false) }
-    val datePickerState = rememberDatePickerState()
     var selectedDob by remember { mutableStateOf("") }
-
-    val availableSports = listOf("Football", "Basketball", "Cricket", "Volleyball", "Throwball", "Tennis", "Badminton", "Hockey", "Rugby", "Athletics", "Baseball")
-    var sportsSearchQuery by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     val selectedSports = remember { mutableStateListOf<String>() }
+    val selectedPlayers = remember { mutableStateListOf<String>() }
 
-    val adjustProfileTitle = stringResource(R.string.adjust_profile_title)
-
-    val cropImageLauncher = rememberLauncherForActivityResult(contract = CropImageContract()) { result ->
-        if (result.isSuccessful) {
-            selectedImageUri = result.uriContent
-        }
-    }
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            val cropOptions = CropImageContractOptions(
-                uri,
-                CropImageOptions(
-                    cropShape = CropImageView.CropShape.OVAL,
-                    fixAspectRatio = true,
-                    aspectRatioX = 1,
-                    aspectRatioY = 1,
-                    toolbarColor = "#061710".toColorInt(),
-                    activityTitle = adjustProfileTitle,
-                    activityMenuIconColor = android.graphics.Color.WHITE,
-                    // ALTRON INJECTION: Re-attached the required fallback commands to force the SAVE button
-                    cropMenuCropButtonTitle = "SAVE",
-                    backgroundColor = "#061710".toColorInt()
-                )
-            )
-            cropImageLauncher.launch(cropOptions)
-        }
+    val filteredPlayers = remember(selectedSports.toList()) {
+        allPlayers.filter { selectedSports.contains(it.sport) }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(DeepForestNightStart, DeepForestNightEnd)))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = stringResource(R.string.gear_up),
-                color = Color.White,
-                fontSize = 32.sp,
-                fontFamily = Montserrat,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = stringResource(R.string.establish_identity),
-                color = CoolTeal,
-                fontSize = 12.sp,
-                fontFamily = Montserrat,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 2.sp,
-                modifier = Modifier.padding(top = 8.dp, bottom = 40.dp)
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(140.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x1F74C2BD))
-                    .border(2.dp, if (selectedImageUri == null) TurfGreen else Saffron, CircleShape)
-                    .clickable {
-                        photoPickerLauncher.launch(
-                            androidx.activity.result.PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                if (selectedImageUri == null) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(R.string.add_photo_desc), tint = CoolTeal, modifier = Modifier.size(40.dp))
-                        Text(text = stringResource(R.string.upload), color = CoolTeal, fontFamily = Montserrat, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-                    }
-                } else {
-                    AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = stringResource(R.string.profile_photo_desc),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-
-            Text(
-                text = userName.ifBlank { stringResource(R.string.new_athlete_default) },
-                color = Color.White,
-                fontSize = 24.sp,
-                fontFamily = Montserrat,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 24.dp, bottom = 32.dp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0x0F061710), RoundedCornerShape(16.dp))
-                    .border(1.dp, TurfGreen.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    StyledTextField(
-                        value = selectedDob,
-                        onValueChange = {},
-                        label = stringResource(R.string.dob_label),
-                        placeholder = stringResource(R.string.dob_placeholder),
-                        trailingIcon = { Icon(imageVector = Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.select_date_desc), tint = CoolTeal.copy(alpha = 0.7f)) }
-                    )
-                    Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true }.background(Color.Transparent))
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                StyledTextField(
-                    value = sportsSearchQuery,
-                    onValueChange = { sportsSearchQuery = it },
-                    label = stringResource(R.string.sports_label),
-                    placeholder = stringResource(R.string.sports_placeholder)
+            .background(
+                Brush.verticalGradient(
+                    listOf(DeepForestNightStart, DeepForestNightEnd)
                 )
-
-                if (sportsSearchQuery.isNotEmpty()) {
-                    val filtered = availableSports.filter { (it.contains(other = sportsSearchQuery, ignoreCase = true)) && (!selectedSports.contains(it)) }
-                    if (filtered.isNotEmpty()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            colors = CardDefaults.cardColors(containerColor = DeepForestNightStart),
-                            border = BorderStroke(1.dp, TurfGreen.copy(alpha = 0.3f)),
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                filtered.forEach { sport ->
-                                    Text(
-                                        text = sport,
-                                        color = Color.White,
-                                        fontFamily = OpenSans,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                selectedSports.add(sport)
-                                                sportsSearchQuery = ""
-                                            }
-                                            .padding(12.dp)
-                                    )
-                                }
-                            }
-                        }
+            ),
+    ) {
+        when (currentStep) {
+            SetupStep.PROFILE_INFO -> {
+                ProfileInfoStep(
+                    userName = userName,
+                    selectedImageUri = selectedImageUri,
+                    onImageSelected = { selectedImageUri = it },
+                    selectedDob = selectedDob,
+                    onDobSelected = { selectedDob = it },
+                    phoneNumber = phoneNumber,
+                    onPhoneChanged = { phoneNumber = it },
+                    onNext = {
+                        currentStep = SetupStep.SPORTS_SELECTION
                     }
-                }
-
-                if (selectedSports.isNotEmpty()) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        selectedSports.forEach { sport ->
-                            AssistChip(
-                                onClick = { selectedSports.remove(sport) },
-                                label = { Text(text = sport, color = DeepForestNightEnd, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp) },
-                                trailingIcon = { Icon(imageVector = Icons.Filled.Close, contentDescription = stringResource(R.string.remove_desc), modifier = Modifier.size(14.dp), tint = DeepForestNightEnd) },
-                                colors = AssistChipDefaults.assistChipColors(containerColor = Saffron),
-                                shape = RoundedCornerShape(16.dp),
-                                border = null,
-                            )
-                        }
-                    }
-                }
+                )
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Button(
-                onClick = { onComplete(selectedImageUri, selectedDob, selectedSports.toList()) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Saffron, contentColor = DeepForestNightEnd),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text(text = stringResource(R.string.finalize_registration), fontFamily = Montserrat, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            SetupStep.SPORTS_SELECTION -> {
+                SportsSelectionStep(
+                    availableSports = availableSports,
+                    selectedSports = selectedSports,
+                    onBack = { currentStep = SetupStep.PROFILE_INFO },
+                    onNext = {
+                        currentStep = SetupStep.PLAYER_SELECTION
+                    }
+                )
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
-        }
-
-        if (showDatePicker) {
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showDatePicker = false
-                        val utcTimeMillis = datePickerState.selectedDateMillis
-                        if (utcTimeMillis != null) {
-                            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                            formatter.timeZone = TimeZone.getTimeZone("UTC")
-                            selectedDob = formatter.format(Date(utcTimeMillis))
-                        }
-                    }) {
-                        Text(text = stringResource(R.string.confirm), color = Saffron, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) {
-                        Text(text = stringResource(R.string.cancel), color = Color.Gray, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = DatePickerDefaults.colors(containerColor = DeepForestNightStart),
-            ) {
-                DatePicker(
-                    state = datePickerState,
-                    colors = DatePickerDefaults.colors(
-                        titleContentColor = CoolTeal,
-                        headlineContentColor = Color.White,
-                        weekdayContentColor = CoolTeal,
-                        dayContentColor = Color.White,
-                        todayContentColor = Saffron,
-                        todayDateBorderColor = Saffron,
-                        selectedDayContainerColor = Saffron,
-                        selectedDayContentColor = DeepForestNightEnd,
-                    ),
+            SetupStep.PLAYER_SELECTION -> {
+                PlayerSelectionStep(
+                    players = filteredPlayers,
+                    selectedPlayers = selectedPlayers,
+                    onBack = { currentStep = SetupStep.SPORTS_SELECTION },
+                    onFinish = { onComplete(selectedImageUri, selectedDob, phoneNumber, selectedSports.toList(), selectedPlayers.toList()) },
+                    onSkip = { onComplete(selectedImageUri, selectedDob, phoneNumber, selectedSports.toList(), emptyList()) }
                 )
             }
         }
     }
 }
+
+val availableSports = listOf(
+    Sport(
+        name = "Football",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Football_in_Bloomington%2C_Indiana%2C_2022.jpg/200px-Football_in_Bloomington%2C_Indiana%2C_2022.jpg"
+    ),
+    Sport(
+        name = "Basketball",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Basketball.png/200px-Basketball.png"
+    ),
+    Sport(
+        name = "Cricket",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Cricket_ball.jpg/200px-Cricket_ball.jpg"
+    ),
+    Sport(
+        name = "Volleyball",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Volleyball_Brazil_Russia_2008_Olympics.jpg/200px-Volleyball_Brazil_Russia_2008_Olympics.jpg"
+    ),
+    Sport(
+        name = "Tennis",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Female_tennis_player.jpg/200px-Female_tennis_player.jpg"
+    ),
+    Sport(
+        name = "Badminton",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Badminton_Smash4.jpg/200px-Badminton_Smash4.jpg"
+    ),
+    Sport(
+        name = "Hockey",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Field_hockey.jpg/200px-Field_hockey.jpg"
+    ),
+    Sport(
+        name = "Kabaddi",
+        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Kabaddi_India.jpg/200px-Kabaddi_India.jpg"
+    )
+)
+
+val allPlayers = listOf(
+    // ── CRICKET ──────────────────────────────────────────────────────────────
+    FamousPlayer("Virat Kohli", "Cricket",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Virat_Kohli_-_2020.jpg/200px-Virat_Kohli_-_2020.jpg"),
+    FamousPlayer("Sachin Tendulkar", "Cricket",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Sachin_Tendulkar_at_the_WEF%2C_2013.jpg/200px-Sachin_Tendulkar_at_the_WEF%2C_2013.jpg"),
+    FamousPlayer("MS Dhoni", "Cricket",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/MS_Dhoni_in_2019.jpg/200px-MS_Dhoni_in_2019.jpg"),
+    FamousPlayer("Rohit Sharma", "Cricket",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Rohit_Sharma.jpg/200px-Rohit_Sharma.jpg"),
+    FamousPlayer("Hardik Pandya", "Cricket", null),
+    FamousPlayer("Jasprit Bumrah", "Cricket",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Jasprit_Bumrah_T20.jpg/200px-Jasprit_Bumrah_T20.jpg"),
+    FamousPlayer("KL Rahul", "Cricket", null),
+    FamousPlayer("Shubman Gill", "Cricket", null),
+    FamousPlayer("Yuvraj Singh", "Cricket",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Yuvraj_Singh_2011_WC.jpg/200px-Yuvraj_Singh_2011_WC.jpg"),
+    FamousPlayer("Rishabh Pant", "Cricket", null),
+
+    // ── FOOTBALL ─────────────────────────────────────────────────────────────
+    FamousPlayer("Lionel Messi", "Football",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg/200px-Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg"),
+    FamousPlayer("Cristiano Ronaldo", "Football",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Cristiano_Ronaldo_2018.jpg/200px-Cristiano_Ronaldo_2018.jpg"),
+    FamousPlayer("Neymar Jr", "Football", null),
+    FamousPlayer("Kylian Mbappé", "Football",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/2019-07-17_SG_Dynamo_Dresden_v_Paris_Saint-Germain_FC_by_Sandro_Halank_%E2%80%93_096_%28cropped%29.jpg/200px-2019-07-17_SG_Dynamo_Dresden_v_Paris_Saint-Germain_FC_by_Sandro_Halank_%E2%80%93_096_%28cropped%29.jpg"),
+    FamousPlayer("Sunil Chhetri", "Football",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Sunil_Chhetri.jpg/200px-Sunil_Chhetri.jpg"),
+    FamousPlayer("Erling Haaland", "Football",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Erling_Haaland_2022.jpg/200px-Erling_Haaland_2022.jpg"),
+    FamousPlayer("Gurpreet Singh Sandhu", "Football", null),
+    FamousPlayer("Sandesh Jhingan", "Football", null),
+    FamousPlayer("Sahal Abdul Samad", "Football", null),
+    FamousPlayer("Ashique Kuruniyan", "Football", null),
+
+    // ── BASKETBALL ───────────────────────────────────────────────────────────
+    FamousPlayer("LeBron James", "Basketball",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/LeBron_James_crop.jpg/200px-LeBron_James_crop.jpg"),
+    FamousPlayer("Stephen Curry", "Basketball",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Stephen_Curry_Shooting_%28cropped%29.jpg/200px-Stephen_Curry_Shooting_%28cropped%29.jpg"),
+    FamousPlayer("Kevin Durant", "Basketball", null),
+    FamousPlayer("Giannis Antetokounmpo", "Basketball",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Giannis_Antetokounmpo_2019.jpg/200px-Giannis_Antetokounmpo_2019.jpg"),
+    FamousPlayer("Kyrie Irving", "Basketball", null),
+    FamousPlayer("Russell Westbrook", "Basketball", null),
+    FamousPlayer("Ja Morant", "Basketball", null),
+    FamousPlayer("Luka Dončić", "Basketball",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Luka_Don%C4%8Di%C4%87_2022_%28cropped%29.jpg/200px-Luka_Don%C4%8Di%C4%87_2022_%28cropped%29.jpg"),
+    FamousPlayer("Satnam Singh", "Basketball", null),
+    FamousPlayer("Princepal Singh", "Basketball", null),
+
+    // ── VOLLEYBALL ───────────────────────────────────────────────────────────
+    FamousPlayer("Key Alves", "Volleyball", null),
+    FamousPlayer("Zehra Gunes", "Volleyball", null),
+    FamousPlayer("Gabi Guimarães", "Volleyball", null),
+    FamousPlayer("Ebrar Karakurt", "Volleyball", null),
+    FamousPlayer("Ran Takahashi", "Volleyball", null),
+    FamousPlayer("Yuki Ishikawa", "Volleyball", null),
+    FamousPlayer("Alyssa Valdez", "Volleyball", null),
+    FamousPlayer("Melissa Vargas", "Volleyball", null),
+    FamousPlayer("Ashwal Rai", "Volleyball", null),
+    FamousPlayer("Mohan Ukkrapandian", "Volleyball", null),
+
+    // ── TENNIS ───────────────────────────────────────────────────────────────
+    FamousPlayer("Rafael Nadal", "Tennis",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Rafael_Nadal_Roland_Garros_2022_crop.jpg/200px-Rafael_Nadal_Roland_Garros_2022_crop.jpg"),
+    FamousPlayer("Novak Djokovic", "Tennis",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Novak_Djokovi%C4%87_2022.jpg/200px-Novak_Djokovi%C4%87_2022.jpg"),
+    FamousPlayer("Roger Federer", "Tennis",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Roger_Federer_2020_%28cropped%29.jpg/200px-Roger_Federer_2020_%28cropped%29.jpg"),
+    FamousPlayer("Serena Williams", "Tennis",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Serena_Williams_US_Open_2013_crop.jpg/200px-Serena_Williams_US_Open_2013_crop.jpg"),
+    FamousPlayer("Sania Mirza", "Tennis",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Sania_Mirza_%28cropped%29.jpg/200px-Sania_Mirza_%28cropped%29.jpg"),
+    FamousPlayer("Carlos Alcaraz", "Tennis",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Carlos_Alcaraz_2022_Wimbledon_%28cropped%29.jpg/200px-Carlos_Alcaraz_2022_Wimbledon_%28cropped%29.jpg"),
+    FamousPlayer("Iga Świątek", "Tennis", null),
+    FamousPlayer("Leander Paes", "Tennis", null),
+    FamousPlayer("Rohan Bopanna", "Tennis", null),
+    FamousPlayer("Sumit Nagal", "Tennis", null),
+
+    // ── BADMINTON ────────────────────────────────────────────────────────────
+    FamousPlayer("PV Sindhu", "Badminton",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/PV_Sindhu_%28cropped%29.jpg/200px-PV_Sindhu_%28cropped%29.jpg"),
+    FamousPlayer("Saina Nehwal", "Badminton",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Saina_Nehwal_BWF_2013.jpg/200px-Saina_Nehwal_BWF_2013.jpg"),
+    FamousPlayer("Lee Chong Wei", "Badminton",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Lee_Chong_Wei_%28cropped%29.jpg/200px-Lee_Chong_Wei_%28cropped%29.jpg"),
+    FamousPlayer("Viktor Axelsen", "Badminton", null),
+    FamousPlayer("Tai Tzu Ying", "Badminton", null),
+    FamousPlayer("Lakshya Sen", "Badminton", null),
+    FamousPlayer("Kidambi Srikanth", "Badminton", null),
+    FamousPlayer("Chirag Shetty", "Badminton", null),
+    FamousPlayer("Satwiksairaj Rankireddy", "Badminton", null),
+    FamousPlayer("Gayatri Gopichand", "Badminton", null),
+
+    // ── HOCKEY ───────────────────────────────────────────────────────────────
+    FamousPlayer("PR Sreejesh", "Hockey",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/PR_Sreejesh.jpg/200px-PR_Sreejesh.jpg"),
+    FamousPlayer("Harmanpreet Singh", "Hockey", null),
+    FamousPlayer("Manpreet Singh", "Hockey", null),
+    FamousPlayer("Savita Punia", "Hockey", null),
+    FamousPlayer("Rani Rampal", "Hockey",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Rani_Rampal.jpg/200px-Rani_Rampal.jpg"),
+    FamousPlayer("Hardik Singh", "Hockey", null),
+    FamousPlayer("Vandana Katariya", "Hockey", null),
+    FamousPlayer("Salima Tete", "Hockey", null),
+    FamousPlayer("Vivek Sagar Prasad", "Hockey", null),
+    FamousPlayer("Lalremsiami", "Hockey", null),
+
+    // ── KABADDI ──────────────────────────────────────────────────────────────
+    FamousPlayer("Pawan Sehrawat", "Kabaddi", null),
+    FamousPlayer("Pardeep Narwal", "Kabaddi", null),
+    FamousPlayer("Rahul Chaudhari", "Kabaddi", null),
+    FamousPlayer("Ajay Thakur", "Kabaddi", null),
+    FamousPlayer("Naveen Kumar", "Kabaddi", null),
+    FamousPlayer("Arjun Deshwal", "Kabaddi", null),
+    FamousPlayer("Aslam Inamdar", "Kabaddi", null),
+    FamousPlayer("Anup Kumar", "Kabaddi", null),
+    FamousPlayer("Khushdeep Singh Gill", "Kabaddi", null),
+    FamousPlayer("Mohit Goyat", "Kabaddi", null)
+)
