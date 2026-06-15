@@ -7,14 +7,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +25,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
 import com.chinmaib.sportconnect.R
 import com.chinmaib.sportconnect.ui.theme.*
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -57,7 +59,7 @@ fun AuthScreen(
 
     LaunchedEffect(isTimerActive, timeLeft) {
         if ((isTimerActive) && (timeLeft > 0)) {
-            delay(1000)
+            delay(1.seconds)
             timeLeft--
         } else if (timeLeft == 0) {
             isTimerActive = false
@@ -73,22 +75,18 @@ fun AuthScreen(
     val passwordTooWeak = stringResource(R.string.password_too_weak)
     val passwordsDoNotMatch = stringResource(R.string.passwords_do_not_match)
     val fieldsCompulsory = stringResource(R.string.fields_compulsory)
-    val recoveryTokenSentTemplate = stringResource(R.string.recovery_token_sent)
 
     LaunchedEffect(authState) {
-        val currentAuthState = authState
-        when (currentAuthState) {
+        when (val currentAuthState = authState) {
             is AuthState.Authenticated -> {
-                onAuthSuccess(isLoginMode, fullName.trim())
+                onAuthSuccess(true, fullName.ifBlank { "Athlete" })
                 viewModel.resetState()
             }
             is AuthState.OnboardingRequired -> {
-                // If login success but no profile, send to setup
-                onAuthSuccess(false, fullName.trim())
+                onAuthSuccess(false, fullName.ifBlank { "Athlete" })
                 viewModel.resetState()
             }
             is AuthState.Success -> {
-                // Fallback for direct success if profile check not triggered
                 viewModel.checkProfileStatus()
             }
             is AuthState.OtpSent -> {
@@ -122,7 +120,10 @@ fun AuthScreen(
             contentAlignment = Alignment.Center,
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -332,7 +333,7 @@ fun AuthScreen(
                                     if (email.isBlank()) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar(enterEmailError) }
                                     } else {
-                                        coroutineScope.launch { snackbarHostState.showSnackbar(recoveryTokenSentTemplate.format(email)) }
+                                        viewModel.sendPasswordReset(email.trim())
                                         isForgotPasswordMode = false
                                         isLoginMode = true
                                     }
@@ -395,15 +396,20 @@ fun AuthScreen(
 
                         Button(
                             onClick = { viewModel.loginWithGoogle() },
+                            enabled = authState !is AuthState.Loading,
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF1F1F1F)),
                             border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                                Image(painter = painterResource(id = R.drawable.ic_google_logo), contentDescription = stringResource(R.string.google_logo_desc), modifier = Modifier.size(24.dp))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(stringResource(R.string.continue_with_google), fontFamily = OpenSans, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, letterSpacing = 0.5.sp)
+                            if (authState is AuthState.Loading) {
+                                CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                                    Image(painter = painterResource(id = R.drawable.ic_google_logo), contentDescription = stringResource(R.string.google_logo_desc), modifier = Modifier.size(24.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(stringResource(R.string.continue_with_google), fontFamily = OpenSans, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, letterSpacing = 0.5.sp)
+                                }
                             }
                         }
                     }

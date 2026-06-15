@@ -2,11 +2,13 @@ package com.chinmaib.sportconnect.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chinmaib.sportconnect.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
@@ -31,23 +34,30 @@ sealed class AuthState {
 @Serializable
 data class UserProfile(
     val id: String? = null,
-    val onboarding_completed: Boolean = false
+    @SerialName("onboarding_completed")
+    val onboardingCompleted: Boolean = false,
 )
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val auth: Auth,
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // Supabase Configuration Instruction:
-    // Update your Supabase Web Dashboard -> Authentication -> URL Configuration
-    // Set both "Site URL" and "Redirect URLs" to: sportconnect://login-callback
-
     private val redirectUrl = "sportconnect://login-callback"
+
+    private fun isConfigValid(): Boolean {
+        return (BuildConfig.SUPABASE_URL.isNotBlank() &&
+                BuildConfig.SUPABASE_URL != "https://your-project.supabase.co" &&
+                BuildConfig.SUPABASE_ANON_KEY.isNotBlank())
+    }
+
+    private fun emitConfigError() {
+        _authState.value = AuthState.Error("Supabase keys missing! Please add them to local.properties and rebuild.")
+    }
 
     init {
         observeSession()
@@ -73,26 +83,31 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                val profile = postgrest["profiles"]
+                // Fetch only the boolean first to avoid serialization issues with complex types
+                val response = postgrest["profiles"]
                     .select(columns = Columns.list("onboarding_completed")) {
                         filter {
                             eq("id", user.id)
                         }
                     }
-                    .decodeSingleOrNull<UserProfile>()
+                
+                // Log the response or check manually
+                val profile = response.decodeSingleOrNull<UserProfile>()
 
-                if (profile?.onboarding_completed == true) {
+                if (profile?.onboardingCompleted == true) {
                     _authState.value = AuthState.Authenticated
                 } else {
                     _authState.value = AuthState.OnboardingRequired
                 }
             } catch (e: Exception) {
+                // If the error is exactly about decoding, we fallback to onboarding
                 _authState.value = AuthState.OnboardingRequired
             }
         }
     }
 
     fun sendOtp(emailInput: String) {
+        if (!isConfigValid()) { emitConfigError(); return }
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
@@ -138,6 +153,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun login(emailInput: String, passwordInput: String) {
+        if (!isConfigValid()) { emitConfigError(); return }
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
@@ -153,12 +169,40 @@ class AuthViewModel @Inject constructor(
     }
 
     fun loginWithGoogle() {
+        if (!isConfigValid()) { emitConfigError(); return }
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.signInWith(Google, redirectUrl = redirectUrl)
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Google Sign-In failed.")
+            }
+        }
+    }
+
+    fun loginWithGoogleNative(idToken: String, nonce: String?) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                auth.signInWith(IDToken) {
+                    this.idToken = idToken
+                    this.nonce = nonce
+                }
+                checkProfileStatus()
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Native Google Sign-In failed.")
+            }
+        }
+    }
+
+    fun sendPasswordReset(emailInput: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                auth.resetPasswordForEmail(emailInput)
+                _authState.value = AuthState.Success
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send reset email.")
             }
         }
     }

@@ -1,7 +1,6 @@
 package com.chinmaib.sportconnect.ui.home
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -22,8 +21,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.core.net.toUri
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,7 +37,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToCreator: () -> Unit,
     onNavigateToRoster: () -> Unit,
-    onNavigateToMatches: () -> Unit
+    onNavigateToMatches: () -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(2) } // Default to 'HOME' (Index 2)
     val tabs = listOf("POSTS", "SPORTS", "HOME", "CHAT", "PROFILE")
@@ -65,7 +64,7 @@ fun HomeScreen(
                             unselectedIconColor = TextMuted,
                             selectedTextColor = GoldPrimary,
                             unselectedTextColor = TextMuted,
-                            indicatorColor = Color.Transparent
+                            indicatorColor = Color.Transparent,
                         )
                     )
                 }
@@ -159,14 +158,16 @@ fun DashboardContent(
 
         item { SectionHeader("MATCHES NEAR YOU", onNavigateToMatches) }
         // For prototype, we reuse events filtered logic or show hardcoded matches near you
-        items(listOf(
-            MatchData("7v7 Football", "Central Park Arena"),
-            MatchData("T20 Cricket", "Downtown Stadium")
-        )) { match ->
+        items(
+            listOf(
+                MatchData("7v7 Football", "Central Park Arena"),
+                MatchData("T20 Cricket", "Downtown Stadium")
+            )
+        ) { match ->
             MatchCard(match)
         }
 
-        item { SectionHeader("SPORTS FILMS", { /* No-op or films list */ }) }
+        item { SectionHeader("SPORTS FILMS") { /* No-op or films list */ } }
         item { SportsFilmsGrid() }
     }
 }
@@ -184,7 +185,7 @@ fun FoodOrderBanner() {
     val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth().height(100.dp).clickable {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.swiggy.com/"))
+            val intent = Intent(Intent.ACTION_VIEW, "https://www.swiggy.com/".toUri())
             context.startActivity(intent)
         },
         shape = RoundedCornerShape(16.dp),
@@ -223,7 +224,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
             .clip(RoundedCornerShape(16.dp))
             .clickable {
                 val url = if (activeMatch != null) "https://www.hotstar.com/sports/live" else "https://www.hotstar.com/sports/highlights"
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
             }
     ) {
         // Blurred Stadium Background
@@ -318,9 +319,9 @@ fun EventCard(event: EventRecord) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(event.title, color = TextPrimary, fontWeight = FontWeight.Medium)
-                if (event.location != null) {
-                    Text(event.location, color = TextSecondary, fontSize = 12.sp)
-                }
+            event.location?.let { location ->
+                Text(location, color = TextSecondary, fontSize = 12.sp)
+            }
             }
             Text(event.date_label, color = GoldPrimary, fontWeight = FontWeight.Bold)
         }
