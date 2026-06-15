@@ -68,7 +68,7 @@ fun PlayerSelectionStep(
 
         Text(
             text = "GET THE LATEST NEWS FROM YOUR FAVOURITES",
-            color = CoolTeal,
+            color = TextSecondary,
             fontSize = 10.sp,
             fontFamily = Montserrat,
             fontWeight = FontWeight.SemiBold,
@@ -87,7 +87,7 @@ fun PlayerSelectionStep(
             placeholder = {
                 Text(
                     text = "Search players...",
-                    color = CoolTeal.copy(alpha = 0.5f),
+                    color = TextMuted,
                     fontFamily = Montserrat,
                     fontSize = 14.sp
                 )
@@ -96,7 +96,7 @@ fun PlayerSelectionStep(
                 Icon(
                     imageVector = Icons.Filled.Search,
                     contentDescription = "Search",
-                    tint = CoolTeal
+                    tint = TextSecondary
                 )
             },
             trailingIcon = {
@@ -105,19 +105,19 @@ fun PlayerSelectionStep(
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Clear",
-                            tint = CoolTeal.copy(alpha = 0.7f)
+                            tint = TextSecondary
                         )
                     }
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = CoolTeal,
-                unfocusedBorderColor = TurfGreen.copy(alpha = 0.4f),
-                cursorColor = Saffron,
-                focusedContainerColor = Color(0x0F74C2BD),
-                unfocusedContainerColor = Color(0x0F74C2BD)
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary,
+                focusedBorderColor = GoldPrimary,
+                unfocusedBorderColor = ElevatedBorders,
+                cursorColor = GoldPrimary,
+                focusedContainerColor = SurfaceCards,
+                unfocusedContainerColor = SurfaceCards
             ),
             shape = RoundedCornerShape(12.dp),
             singleLine = true
@@ -127,7 +127,7 @@ fun PlayerSelectionStep(
         if (selectedPlayers.isNotEmpty()) {
             Text(
                 text = "${selectedPlayers.size} player${if (selectedPlayers.size > 1) "s" else ""} selected",
-                color = Saffron,
+                color = GoldPrimary,
                 fontFamily = Montserrat,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
@@ -141,7 +141,7 @@ fun PlayerSelectionStep(
         if (players.isEmpty()) {
             Text(
                 text = "No players found for your selected sports.\nYou can skip this step.",
-                color = Color.White.copy(alpha = 0.6f),
+                color = TextSecondary,
                 textAlign = TextAlign.Center,
                 fontFamily = Montserrat,
                 fontSize = 14.sp,
@@ -150,7 +150,7 @@ fun PlayerSelectionStep(
         } else if (displayedPlayers.isEmpty() && searchQuery.length >= 2) {
             Text(
                 text = "No players match \"$searchQuery\"",
-                color = Color.White.copy(alpha = 0.6f),
+                color = TextSecondary,
                 textAlign = TextAlign.Center,
                 fontFamily = Montserrat,
                 fontSize = 14.sp,
@@ -192,11 +192,11 @@ fun PlayerSelectionStep(
                     .weight(1f)
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Saffron.copy(alpha = 0.5f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f))
             ) {
                 Text(
                     text = "SKIP",
-                    color = Saffron,
+                    color = GoldPrimary,
                     fontFamily = Montserrat,
                     fontWeight = FontWeight.Bold
                 )
@@ -208,8 +208,8 @@ fun PlayerSelectionStep(
                     .weight(1f)
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Saffron,
-                    contentColor = DeepForestNightEnd
+                    containerColor = GoldPrimary,
+                    contentColor = Color.Black
                 ),
                 shape = RoundedCornerShape(12.dp),
             ) {
@@ -227,7 +227,7 @@ fun PlayerSelectionStep(
         ) {
             Text(
                 text = "BACK TO SPORTS",
-                color = CoolTeal,
+                color = GoldPrimary,
                 fontFamily = Montserrat,
                 fontWeight = FontWeight.SemiBold
             )
@@ -246,12 +246,12 @@ fun PlayerListItem(
             .fillMaxWidth()
             .clickable { onClick() }
             .background(
-                color = if (isSelected) Color(0x1FFFA500) else Color.Transparent,
+                color = if (isSelected) GoldPrimary.copy(alpha = 0.1f) else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
             )
             .border(
                 width = if (isSelected) 1.5.dp else 0.5.dp,
-                color = if (isSelected) Saffron else TurfGreen.copy(alpha = 0.25f),
+                color = if (isSelected) GoldPrimary else ElevatedBorders,
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -264,10 +264,10 @@ fun PlayerListItem(
                 .clip(CircleShape)
                 .border(
                     width = if (isSelected) 2.dp else 1.dp,
-                    color = if (isSelected) Saffron else TurfGreen.copy(alpha = 0.4f),
+                    color = if (isSelected) GoldPrimary else ElevatedBorders,
                     shape = CircleShape
                 )
-                .background(Color(0x1F74C2BD)),
+                .background(SurfaceCards),
             contentAlignment = Alignment.Center
         ) {
             SubcomposeAsyncImage(
@@ -287,7 +287,7 @@ fun PlayerListItem(
                         ) {
                             Text(
                                 text = player.name.take(1).uppercase(),
-                                color = if (isSelected) Saffron else CoolTeal,
+                                color = if (isSelected) GoldPrimary else TextSecondary,
                                 fontFamily = Montserrat,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp
@@ -303,7 +303,7 @@ fun PlayerListItem(
         // Player name
         Text(
             text = player.name,
-            color = if (isSelected) Saffron else Color.White,
+            color = if (isSelected) GoldPrimary else TextPrimary,
             fontFamily = Montserrat,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
             fontSize = 14.sp,
@@ -315,7 +315,7 @@ fun PlayerListItem(
             Icon(
                 imageVector = Icons.Filled.Check,
                 contentDescription = "Selected",
-                tint = Saffron,
+                tint = GoldPrimary,
                 modifier = Modifier.size(20.dp)
             )
         }

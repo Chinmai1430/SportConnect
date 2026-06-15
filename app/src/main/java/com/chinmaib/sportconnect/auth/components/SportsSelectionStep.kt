@@ -57,7 +57,7 @@ fun SportsSelectionStep(
 
         Text(
             text = "SELECT THE SPORTS YOU ARE INTERESTED IN",
-            color = CoolTeal,
+            color = TextSecondary,
             fontSize = 10.sp,
             fontFamily = Montserrat,
             fontWeight = FontWeight.SemiBold,
@@ -99,16 +99,16 @@ fun SportsSelectionStep(
                 onClick = onBack,
                 modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Saffron.copy(alpha = 0.5f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f))
             ) {
-                Text(text = "BACK", color = Saffron, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                Text(text = "BACK", color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
             }
 
             Button(
                 onClick = onNext,
                 enabled = selectedSports.isNotEmpty(),
                 modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Saffron, contentColor = DeepForestNightEnd),
+                colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Text(text = "CONTINUE", fontFamily = Montserrat, fontWeight = FontWeight.Bold)
@@ -139,10 +139,10 @@ fun VisualSelectionCard(
                 .clip(CircleShape)
                 .border(
                     width = if (isSelected) 3.dp else 1.dp,
-                    color = if (isSelected) Saffron else TurfGreen.copy(alpha = 0.3f),
+                    color = if (isSelected) GoldPrimary else ElevatedBorders,
                     shape = CircleShape
                 )
-                .background(if (isSelected) DeepForestNightEnd else Color(0x1F74C2BD)),
+                .background(if (isSelected) SurfaceCards else SurfaceCards.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center
         ) {
             SubcomposeAsyncImage(
@@ -162,7 +162,7 @@ fun VisualSelectionCard(
                         ) {
                             Text(
                                 text = name.take(1).uppercase(),
-                                color = if (isSelected) Saffron else CoolTeal,
+                                color = if (isSelected) GoldPrimary else TextSecondary,
                                 fontFamily = Montserrat,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp
@@ -182,7 +182,7 @@ fun VisualSelectionCard(
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = "Selected",
-                        tint = Saffron,
+                        tint = GoldPrimary,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -193,7 +193,7 @@ fun VisualSelectionCard(
 
         Text(
             text = name,
-            color = if (isSelected) Saffron else Color.White,
+            color = if (isSelected) GoldPrimary else TextPrimary,
             fontFamily = Montserrat,
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
