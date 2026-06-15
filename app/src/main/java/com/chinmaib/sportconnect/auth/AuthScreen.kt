@@ -78,10 +78,18 @@ fun AuthScreen(
     LaunchedEffect(authState) {
         val currentAuthState = authState
         when (currentAuthState) {
-            is AuthState.Success -> {
-                // ALTRON INJECTION: Routing the user's name forward
+            is AuthState.Authenticated -> {
                 onAuthSuccess(isLoginMode, fullName.trim())
                 viewModel.resetState()
+            }
+            is AuthState.OnboardingRequired -> {
+                // If login success but no profile, send to setup
+                onAuthSuccess(false, fullName.trim())
+                viewModel.resetState()
+            }
+            is AuthState.Success -> {
+                // Fallback for direct success if profile check not triggered
+                viewModel.checkProfileStatus()
             }
             is AuthState.OtpSent -> {
                 snackbarHostState.showSnackbar(otpDispatchedMsg)
@@ -109,7 +117,7 @@ fun AuthScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(DeepForestNightStart, DeepForestNightEnd)))
+                .background(PrimaryBackground)
                 .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
@@ -144,8 +152,8 @@ fun AuthScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0x0F061710), RoundedCornerShape(16.dp))
-                        .border(1.dp, TurfGreen.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                        .background(SurfaceCards, RoundedCornerShape(16.dp))
+                        .border(1.dp, ElevatedBorders, RoundedCornerShape(16.dp))
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -184,7 +192,7 @@ fun AuthScreen(
                                     Icon(
                                         imageVector = Icons.Filled.CheckCircle,
                                         contentDescription = stringResource(R.string.verified_desc),
-                                        tint = VerifiedBlue,
+                                        tint = StatusLiveWin,
                                         modifier = Modifier.padding(end = 12.dp),
                                     )
                                 } else if (isEmailReadyToVerify) {
@@ -195,11 +203,11 @@ fun AuthScreen(
                                             isTimerActive = true
                                             viewModel.sendOtp(email.trim())
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Saffron),
+                                        colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.padding(end = 6.dp).height(34.dp),
                                     ) {
-                                        Text(stringResource(R.string.verify), color = DeepForestNightEnd, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                        Text(stringResource(R.string.verify), color = Color.Black, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                                     }
                                 }
                             }
@@ -218,13 +226,13 @@ fun AuthScreen(
                                     onClick = { viewModel.verifyOtp(email.trim(), otpInput.trim()) },
                                     enabled = otpInput.length >= 3,
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Saffron,
-                                        disabledContainerColor = Color.Gray.copy(alpha = 0.3f),
+                                        containerColor = GoldPrimary,
+                                        disabledContainerColor = ElevatedBorders,
                                     ),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.padding(end = 6.dp).height(34.dp),
                                 ) {
-                                    Text(stringResource(R.string.submit), color = if (otpInput.length >= 3) DeepForestNightEnd else Color.White, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                    Text(stringResource(R.string.submit), color = if (otpInput.length >= 3) Color.Black else TextMuted, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                                 }
                             },
                         )
@@ -235,7 +243,7 @@ fun AuthScreen(
                         ) {
                             if (timeLeft > 0) {
                                 Text(
-                                    text = stringResource(R.string.resend_otp_in, timeLeft), color = CoolTeal.copy(alpha = 0.8f),
+                                    text = stringResource(R.string.resend_otp_in, timeLeft), color = TextSecondary,
                                     fontSize = 13.sp, fontFamily = OpenSans,
                                 )
                             } else {
@@ -246,10 +254,10 @@ fun AuthScreen(
                                         viewModel.sendOtp(email.trim())
                                     },
                                     modifier = Modifier.height(36.dp), shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, Saffron.copy(alpha = 0.5f)),
+                                    border = BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f)),
                                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                                 ) {
-                                    Text(stringResource(R.string.resend_otp_button), color = Saffron, fontSize = 11.sp, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.resend_otp_button), color = GoldPrimary, fontSize = 11.sp, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -311,7 +319,7 @@ fun AuthScreen(
                             onClick = { isForgotPasswordMode = true },
                             modifier = Modifier.align(Alignment.End),
                         ) {
-                            Text(stringResource(R.string.forgot_password), color = CoolTeal.copy(alpha = 0.8f), fontFamily = OpenSans, fontSize = 13.sp)
+                            Text(stringResource(R.string.forgot_password), color = TextSecondary, fontFamily = OpenSans, fontSize = 13.sp)
                         }
                     } else {
                         Spacer(modifier = Modifier.height(24.dp))
@@ -358,11 +366,11 @@ fun AuthScreen(
                         },
                         enabled = authState !is AuthState.Loading,
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Saffron, disabledContainerColor = Saffron.copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, disabledContainerColor = GoldDark),
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         if (authState is AuthState.Loading) {
-                            CircularProgressIndicator(color = DeepForestNightEnd, modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
+                            CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
                         } else {
                             Text(
                                 text = when {
@@ -370,7 +378,7 @@ fun AuthScreen(
                                     isLoginMode -> stringResource(R.string.enter_system)
                                     else -> stringResource(R.string.get_on_field)
                                 },
-                                fontFamily = Montserrat, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = DeepForestNightEnd,
+                                fontFamily = Montserrat, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color.Black,
                             )
                         }
                     }
@@ -380,9 +388,9 @@ fun AuthScreen(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            HorizontalDivider(modifier = Modifier.weight(1f), color = TurfGreen.copy(alpha = 0.2f))
-                            Text(stringResource(R.string.or_divider), color = CoolTeal.copy(alpha = 0.5f), fontFamily = Montserrat, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
-                            HorizontalDivider(modifier = Modifier.weight(1f), color = TurfGreen.copy(alpha = 0.2f))
+                            HorizontalDivider(modifier = Modifier.weight(1f), color = ElevatedBorders)
+                            Text(stringResource(R.string.or_divider), color = TextMuted, fontFamily = Montserrat, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                            HorizontalDivider(modifier = Modifier.weight(1f), color = ElevatedBorders)
                         }
 
                         Button(
@@ -420,7 +428,7 @@ fun AuthScreen(
                                 isLoginMode -> stringResource(R.string.need_account)
                                 else -> stringResource(R.string.already_on_roster)
                             },
-                            color = CoolTeal, fontFamily = Montserrat, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 0.5.sp,
+                            color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 0.5.sp,
                         )
                     }
                 }

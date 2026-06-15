@@ -7,46 +7,106 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.providers.builtin.OTP // ALTRON: Supabase OTP Engine
+import io.github.jan.supabase.auth.providers.builtin.OTP
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
 sealed class AuthState {
     data object Idle : AuthState()
     data object Loading : AuthState()
     data object Success : AuthState()
-    data object OtpSent : AuthState()       // UI Trigger: OTP Email dispatched
-    data object OtpVerified : AuthState()   // UI Trigger: Blue tick unlocked
+    data object OnboardingRequired : AuthState()
+    data object Authenticated : AuthState()
+    data object OtpSent : AuthState()
+    data object OtpVerified : AuthState()
     data class Error(val message: String) : AuthState()
 }
+
+@Serializable
+data class UserProfile(
+    val id: String? = null,
+    val onboarding_completed: Boolean = false
+)
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val auth: Auth,
+    private val postgrest: Postgrest
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // ALTRON INJECTION: Triggers Supabase to send the real-time email
+    // Supabase Configuration Instruction:
+    // Update your Supabase Web Dashboard -> Authentication -> URL Configuration
+    // Set both "Site URL" and "Redirect URLs" to: sportconnect://login-callback
+
+    private val redirectUrl = "sportconnect://login-callback"
+
+    init {
+        observeSession()
+    }
+
+    private fun observeSession() {
+        viewModelScope.launch {
+            auth.sessionStatus.collect { status ->
+                if (status is io.github.jan.supabase.auth.status.SessionStatus.Authenticated) {
+                    checkProfileStatus()
+                }
+            }
+        }
+    }
+
+    fun checkProfileStatus() {
+        val user = auth.currentUserOrNull()
+        if (user == null) {
+            _authState.value = AuthState.Idle
+            return
+        }
+
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                val profile = postgrest["profiles"]
+                    .select(columns = Columns.list("onboarding_completed")) {
+                        filter {
+                            eq("id", user.id)
+                        }
+                    }
+                    .decodeSingleOrNull<UserProfile>()
+
+                if (profile?.onboarding_completed == true) {
+                    _authState.value = AuthState.Authenticated
+                } else {
+                    _authState.value = AuthState.OnboardingRequired
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.OnboardingRequired
+            }
+        }
+    }
+
     fun sendOtp(emailInput: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.signInWith(OTP) {
                     email = emailInput
+                    createUser = true
                 }
                 _authState.value = AuthState.OtpSent
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send OTP. Check email format.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send OTP.")
             }
         }
     }
 
-    // ALTRON INJECTION: Checks the 6-digit code against the Supabase server
     fun verifyOtp(emailInput: String, otpInput: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -58,12 +118,11 @@ class AuthViewModel @Inject constructor(
                 )
                 _authState.value = AuthState.OtpVerified
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Invalid OTP. Please check the code and try again.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Invalid OTP.")
             }
         }
     }
 
-    // Since the OTP already authenticated them, we just attach their new password
     fun finalizeSignUp(passwordInput: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -86,9 +145,9 @@ class AuthViewModel @Inject constructor(
                     email = emailInput
                     password = passwordInput
                 }
-                _authState.value = AuthState.Success
+                checkProfileStatus()
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Login failed. Check your credentials.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Login failed.")
             }
         }
     }
@@ -97,10 +156,9 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                auth.signInWith(Google)
-                _authState.value = AuthState.Success
+                auth.signInWith(Google, redirectUrl = redirectUrl)
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Google Sign-In canceled or failed.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Google Sign-In failed.")
             }
         }
     }

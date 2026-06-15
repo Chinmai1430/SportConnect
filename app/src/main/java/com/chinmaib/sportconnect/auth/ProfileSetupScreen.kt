@@ -10,12 +10,15 @@ import androidx.compose.ui.graphics.Brush
 import com.chinmaib.sportconnect.auth.components.PlayerSelectionStep
 import com.chinmaib.sportconnect.auth.components.ProfileInfoStep
 import com.chinmaib.sportconnect.auth.components.SportsSelectionStep
+import com.chinmaib.sportconnect.auth.components.TeamSelectionStep
+import com.chinmaib.sportconnect.auth.components.FamousTeam
 import com.chinmaib.sportconnect.ui.theme.*
 
 enum class SetupStep {
     PROFILE_INFO,
     SPORTS_SELECTION,
-    PLAYER_SELECTION
+    PLAYER_SELECTION,
+    TEAM_SELECTION
 }
 
 data class FamousPlayer(val name: String, val sport: String, val imageUrl: String? = null)
@@ -24,7 +27,7 @@ data class Sport(val name: String, val imageUrl: String)
 @Composable
 fun ProfileSetupScreen(
     userName: String,
-    onComplete: (Uri?, String, String, List<String>, List<String>) -> Unit,
+    onComplete: (Uri?, String, String, List<String>, List<String>, List<String>) -> Unit,
 ) {
     var currentStep by remember { mutableStateOf(SetupStep.PROFILE_INFO) }
 
@@ -33,19 +36,20 @@ fun ProfileSetupScreen(
     var phoneNumber by remember { mutableStateOf("") }
     val selectedSports = remember { mutableStateListOf<String>() }
     val selectedPlayers = remember { mutableStateListOf<String>() }
+    val selectedTeams = remember { mutableStateListOf<String>() }
 
     val filteredPlayers = remember(selectedSports.toList()) {
         allPlayers.filter { selectedSports.contains(it.sport) }
     }
 
+    val filteredTeams = remember(selectedSports.toList()) {
+        allTeams.filter { selectedSports.contains(it.sport) }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(DeepForestNightStart, DeepForestNightEnd)
-                )
-            ),
+            .background(PrimaryBackground),
     ) {
         when (currentStep) {
             SetupStep.PROFILE_INFO -> {
@@ -77,13 +81,37 @@ fun ProfileSetupScreen(
                     players = filteredPlayers,
                     selectedPlayers = selectedPlayers,
                     onBack = { currentStep = SetupStep.SPORTS_SELECTION },
-                    onFinish = { onComplete(selectedImageUri, selectedDob, phoneNumber, selectedSports.toList(), selectedPlayers.toList()) },
-                    onSkip = { onComplete(selectedImageUri, selectedDob, phoneNumber, selectedSports.toList(), emptyList()) }
+                    onFinish = {
+                        currentStep = SetupStep.TEAM_SELECTION
+                    },
+                    onSkip = {
+                        currentStep = SetupStep.TEAM_SELECTION
+                    }
+                )
+            }
+            SetupStep.TEAM_SELECTION -> {
+                TeamSelectionStep(
+                    teams = filteredTeams,
+                    selectedTeams = selectedTeams,
+                    onBack = { currentStep = SetupStep.PLAYER_SELECTION },
+                    onFinish = {
+                        onComplete(selectedImageUri, selectedDob, phoneNumber, selectedSports.toList(), selectedPlayers.toList(), selectedTeams.toList())
+                    }
                 )
             }
         }
     }
 }
+
+val allTeams = listOf(
+    FamousTeam("RCB", "Cricket"),
+    FamousTeam("CSK", "Cricket"),
+    FamousTeam("MI", "Cricket"),
+    FamousTeam("Manchester United", "Football"),
+    FamousTeam("Real Madrid", "Football"),
+    FamousTeam("LA Lakers", "Basketball"),
+    FamousTeam("Golden State Warriors", "Basketball")
+)
 
 val availableSports = listOf(
     Sport(

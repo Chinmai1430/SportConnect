@@ -36,9 +36,9 @@ val OpenSans = FontFamily(
 // Shared Utilities
 enum class PasswordStrength(val labelResId: Int?, val color: Color, val progress: Float) {
     NONE(null, Color.Transparent, 0f),
-    WEAK(R.string.password_strength_weak, Color(0xFFE57373), 0.33f),
-    MODERATE(R.string.password_strength_moderate, Saffron, 0.66f),
-    STRONG(R.string.password_strength_strong, TurfGreen, 1f)
+    WEAK(R.string.password_strength_weak, StatusLossError, 0.33f),
+    MODERATE(R.string.password_strength_moderate, GoldLight, 0.66f),
+    STRONG(R.string.password_strength_strong, StatusLiveWin, 1f)
 }
 
 fun calculateStrength(password: String): PasswordStrength {
@@ -75,8 +75,8 @@ fun StyledTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(text = label, color = CoolTeal.copy(alpha = 0.7f), fontFamily = OpenSans) },
-        placeholder = placeholder?.let { { Text(text = it, color = CoolTeal.copy(alpha = 0.4f), fontFamily = OpenSans) } },
+        label = { Text(text = label, fontFamily = OpenSans) },
+        placeholder = placeholder?.let { { Text(text = it, fontFamily = OpenSans) } },
         visualTransformation = if (isPassword && !isPasswordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text),
         trailingIcon = {
@@ -85,7 +85,7 @@ fun StyledTextField(
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                         contentDescription = if (isPasswordVisible) stringResource(R.string.hide_password_desc) else stringResource(R.string.show_password_desc),
-                        tint = CoolTeal.copy(alpha = 0.7f),
+                        tint = GoldPrimary.copy(alpha = 0.7f),
                     )
                 }
             } else {
@@ -94,13 +94,17 @@ fun StyledTextField(
         },
         modifier = Modifier.fillMaxWidth(),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = TurfGreen,
-            unfocusedBorderColor = TurfGreen.copy(alpha = 0.3f),
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            cursorColor = Saffron,
+            focusedBorderColor = GoldPrimary,
+            unfocusedBorderColor = ElevatedBorders,
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary,
+            cursorColor = GoldPrimary,
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
+            focusedLabelColor = GoldPrimary,
+            unfocusedLabelColor = TextSecondary,
+            focusedPlaceholderColor = TextMuted,
+            unfocusedPlaceholderColor = TextMuted
         ),
         shape = RoundedCornerShape(12.dp),
         singleLine = true,

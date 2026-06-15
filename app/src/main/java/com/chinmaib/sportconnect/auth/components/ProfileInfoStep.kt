@@ -89,11 +89,11 @@ fun ProfileInfoStep(
                     fixAspectRatio = true,
                     aspectRatioX = 1,
                     aspectRatioY = 1,
-                    toolbarColor = "#061710".toColorInt(),
+                    toolbarColor = "#111111".toColorInt(),
                     activityTitle = adjustProfileTitle,
                     activityMenuIconColor = android.graphics.Color.WHITE,
                     cropMenuCropButtonTitle = "SAVE",
-                    backgroundColor = "#061710".toColorInt()
+                    backgroundColor = "#111111".toColorInt()
                 )
             )
             cropImageLauncher.launch(cropOptions)
@@ -121,7 +121,7 @@ fun ProfileInfoStep(
 
         Text(
             text = stringResource(R.string.establish_identity),
-            color = CoolTeal,
+            color = TextSecondary,
             fontSize = 12.sp,
             fontFamily = Montserrat,
             fontWeight = FontWeight.SemiBold,
@@ -133,8 +133,8 @@ fun ProfileInfoStep(
             modifier = Modifier
                 .size(140.dp)
                 .clip(CircleShape)
-                .background(Color(0x1F74C2BD))
-                .border(2.dp, if (selectedImageUri == null) TurfGreen else Saffron, CircleShape)
+                .background(SurfaceCards)
+                .border(2.dp, if (selectedImageUri == null) ElevatedBorders else GoldPrimary, CircleShape)
                 .clickable {
                     photoPickerLauncher.launch(
                         PickVisualMediaRequest(
@@ -146,8 +146,8 @@ fun ProfileInfoStep(
         ) {
             if (selectedImageUri == null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(R.string.add_photo_desc), tint = CoolTeal, modifier = Modifier.size(40.dp))
-                    Text(text = stringResource(R.string.upload), color = CoolTeal, fontFamily = Montserrat, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(R.string.add_photo_desc), tint = TextSecondary, modifier = Modifier.size(40.dp))
+                    Text(text = stringResource(R.string.upload), color = TextSecondary, fontFamily = Montserrat, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
                 }
             } else {
                 AsyncImage(
@@ -171,8 +171,8 @@ fun ProfileInfoStep(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0x0F061710), RoundedCornerShape(16.dp))
-                .border(1.dp, TurfGreen.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                .background(SurfaceCards, RoundedCornerShape(16.dp))
+                .border(1.dp, ElevatedBorders, RoundedCornerShape(16.dp))
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -183,7 +183,7 @@ fun ProfileInfoStep(
                     onValueChange = {},
                     label = stringResource(R.string.dob_label),
                     placeholder = stringResource(R.string.dob_placeholder),
-                    trailingIcon = { Icon(imageVector = Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.select_date_desc), tint = CoolTeal.copy(alpha = 0.7f)) }
+                    trailingIcon = { Icon(imageVector = Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.select_date_desc), tint = TextMuted) }
                 )
                 Box(modifier = Modifier.matchParentSize().clickable { showDatePicker.value = true }.background(Color.Transparent))
             }
@@ -196,7 +196,7 @@ fun ProfileInfoStep(
                 label = "Phone Number",
                 placeholder = "e.g. +91 9876543210",
                 isNumber = true,
-                trailingIcon = { Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone", tint = CoolTeal.copy(alpha = 0.7f)) }
+                trailingIcon = { Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone", tint = TextMuted) }
             )
         }
 
@@ -206,7 +206,7 @@ fun ProfileInfoStep(
             onClick = onNext,
             enabled = selectedDob.isNotBlank() && phoneNumber.length >= 8,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Saffron, contentColor = DeepForestNightEnd),
+            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(text = "CONTINUE", fontFamily = Montserrat, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -229,27 +229,27 @@ fun ProfileInfoStep(
                         onDobSelected(formatter.format(Date(utcTimeMillis)))
                     }
                 }) {
-                    Text(text = stringResource(R.string.confirm), color = Saffron, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                    Text(text = stringResource(R.string.confirm), color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker.value = false }) {
-                    Text(text = stringResource(R.string.cancel), color = Color.Gray, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                    Text(text = stringResource(R.string.cancel), color = TextMuted, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = DeepForestNightStart),
+            colors = DatePickerDefaults.colors(containerColor = SurfaceCards),
         ) {
             DatePicker(
                 state = datePickerState,
                 colors = DatePickerDefaults.colors(
-                    titleContentColor = CoolTeal,
-                    headlineContentColor = Color.White,
-                    weekdayContentColor = CoolTeal,
-                    dayContentColor = Color.White,
-                    todayContentColor = Saffron,
-                    todayDateBorderColor = Saffron,
-                    selectedDayContainerColor = Saffron,
-                    selectedDayContentColor = DeepForestNightEnd,
+                    titleContentColor = TextSecondary,
+                    headlineContentColor = TextPrimary,
+                    weekdayContentColor = TextSecondary,
+                    dayContentColor = TextPrimary,
+                    todayContentColor = GoldPrimary,
+                    todayDateBorderColor = GoldPrimary,
+                    selectedDayContainerColor = GoldPrimary,
+                    selectedDayContentColor = Color.Black,
                 ),
             )
         }

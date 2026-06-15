@@ -71,7 +71,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(DeepForestNightStart, DeepForestNightEnd))),
+            .background(PrimaryBackground),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -90,7 +90,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
             Text(
                 text = stringResource(R.string.app_name).uppercase(),
-                color = Color.White,
+                color = TextPrimary,
                 fontSize = 22.sp,
                 fontFamily = Montserrat,
                 fontWeight = FontWeight.Bold,
