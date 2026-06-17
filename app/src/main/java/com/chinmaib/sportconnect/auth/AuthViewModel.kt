@@ -12,7 +12,6 @@ import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.storage.Storage
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +38,19 @@ data class UserProfile(
     val id: String? = null,
     @SerialName("onboarding_completed")
     val onboardingCompleted: Boolean = false,
+)
+
+@Serializable
+data class ProfileUpdate(
+    val id: String,
+    @SerialName("full_name")
+    val fullName: String,
+    val dob: String,
+    val phone: String,
+    @SerialName("onboarding_completed")
+    val onboardingCompleted: Boolean,
+    @SerialName("avatar_url")
+    val avatarUrl: String? = null,
 )
 
 @HiltViewModel
@@ -280,15 +292,14 @@ class AuthViewModel @Inject constructor(
                 }
 
                 // 2. Update profile in database
-                val profileUpdate = mutableMapOf<String, Any>(
-                    "id" to user.id,
-                    "full_name" to fullName,
-                    "dob" to dob,
-                    "phone" to phone,
-                    "onboarding_completed" to true
+                val profileUpdate = ProfileUpdate(
+                    id = user.id,
+                    fullName = fullName,
+                    dob = dob,
+                    phone = phone,
+                    onboardingCompleted = true,
+                    avatarUrl = avatarUrl
                 )
-                
-                avatarUrl?.let { profileUpdate["avatar_url"] = it }
 
                 postgrest["profiles"].upsert(profileUpdate)
 

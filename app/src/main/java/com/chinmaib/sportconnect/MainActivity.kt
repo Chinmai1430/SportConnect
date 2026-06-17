@@ -5,10 +5,13 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
@@ -30,7 +33,7 @@ import com.chinmaib.sportconnect.ui.theme.SportConnectTheme
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.handleDeeplinks
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import javax.inject.Inject
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -106,18 +109,37 @@ fun SportConnectNavigation() {
             val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
             val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
             val context = androidx.compose.ui.platform.LocalContext.current
-
-            ProfileSetupScreen(userName = userName) { imageUri, fullName, dob, phone, _, _, _ ->
-                authViewModel.saveProfile(imageUri, fullName, dob, phone, context)
-            }
-            
             val authState by authViewModel.authState.collectAsState()
-            LaunchedEffect(authState) {
-                if (authState is com.chinmaib.sportconnect.auth.AuthState.Authenticated) {
-                    navController.navigate("home") {
-                        popUpTo("auth") { inclusive = true }
-                        popUpTo("profile_setup/{userName}") { inclusive = true }
+
+            Box {
+                ProfileSetupScreen(userName = userName) { imageUri, fullName, dob, phone, _, _, _ ->
+                    authViewModel.saveProfile(imageUri, fullName, dob, phone, context)
+                }
+
+                if (authState is com.chinmaib.sportconnect.auth.AuthState.Loading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator(color = com.chinmaib.sportconnect.ui.theme.GoldPrimary)
                     }
+                }
+            }
+
+            LaunchedEffect(authState) {
+                when (authState) {
+                    is com.chinmaib.sportconnect.auth.AuthState.Authenticated -> {
+                        navController.navigate("home") {
+                            popUpTo("auth") { inclusive = true }
+                            popUpTo("profile_setup/{userName}") { inclusive = true }
+                        }
+                    }
+                    is com.chinmaib.sportconnect.auth.AuthState.Error -> {
+                        // Show error if saving fails
+                        android.widget.Toast.makeText(context, (authState as com.chinmaib.sportconnect.auth.AuthState.Error).message, android.widget.Toast.LENGTH_LONG).show()
+                        authViewModel.resetState()
+                    }
+                    else -> {}
                 }
             }
         }
@@ -128,7 +150,7 @@ fun SportConnectNavigation() {
                 viewModel = homeViewModel,
                 onNavigateToCreator = { navController.navigate("sports_creator") },
                 onNavigateToRoster = { navController.navigate("roster_list") },
-                onNavigateToMatches = { navController.navigate("matches_list") }
+                onNavigateToMatches = { navController.navigate("matches_list") },
             )
         }
 
