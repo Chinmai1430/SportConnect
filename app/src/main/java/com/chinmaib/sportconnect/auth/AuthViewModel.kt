@@ -8,7 +8,6 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -40,7 +39,7 @@ data class UserProfile(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val auth: Auth,
+    val auth: Auth,
     private val postgrest: Postgrest,
 ) : ViewModel() {
 
@@ -51,7 +50,6 @@ class AuthViewModel @Inject constructor(
 
     private fun isConfigValid(): Boolean {
         return (BuildConfig.SUPABASE_URL.isNotBlank() &&
-                BuildConfig.SUPABASE_URL != "https://your-project.supabase.co" &&
                 BuildConfig.SUPABASE_ANON_KEY.isNotBlank())
     }
 
@@ -60,6 +58,10 @@ class AuthViewModel @Inject constructor(
     }
 
     init {
+        val user = auth.currentUserOrNull()
+        if (user != null) {
+            checkProfileStatus()
+        }
         observeSession()
     }
 
@@ -99,7 +101,7 @@ class AuthViewModel @Inject constructor(
                 } else {
                     _authState.value = AuthState.OnboardingRequired
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // If the error is exactly about decoding, we fallback to onboarding
                 _authState.value = AuthState.OnboardingRequired
             }
@@ -180,6 +182,8 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    // Native Google Sign-In is reserved for future implementation using Credential Manager
+    /*
     fun loginWithGoogleNative(idToken: String, nonce: String?) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -194,6 +198,7 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
+    */
 
     fun sendPasswordReset(emailInput: String) {
         viewModelScope.launch {

@@ -76,15 +76,21 @@ fun AuthScreen(
     val passwordsDoNotMatch = stringResource(R.string.passwords_do_not_match)
     val fieldsCompulsory = stringResource(R.string.fields_compulsory)
 
+    var hasAttemptedAuth by remember { mutableStateOf(false) }
+
     LaunchedEffect(authState) {
         when (val currentAuthState = authState) {
             is AuthState.Authenticated -> {
-                onAuthSuccess(true, fullName.ifBlank { "Athlete" })
-                viewModel.resetState()
+                if (hasAttemptedAuth || viewModel.auth.currentUserOrNull() != null) {
+                    onAuthSuccess(true, fullName.ifBlank { "Athlete" })
+                    viewModel.resetState()
+                }
             }
             is AuthState.OnboardingRequired -> {
-                onAuthSuccess(false, fullName.ifBlank { "Athlete" })
-                viewModel.resetState()
+                if (hasAttemptedAuth) {
+                    onAuthSuccess(false, fullName.ifBlank { "Athlete" })
+                    viewModel.resetState()
+                }
             }
             is AuthState.Success -> {
                 viewModel.checkProfileStatus()
@@ -342,6 +348,7 @@ fun AuthScreen(
                                     if (email.isBlank() || password.isBlank()) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar(emailPasswordRequired) }
                                     } else {
+                                        hasAttemptedAuth = true
                                         viewModel.login(email.trim(), password.trim())
                                     }
                                 }
@@ -360,6 +367,7 @@ fun AuthScreen(
                                     } else if (password != confirmPassword) {
                                         coroutineScope.launch { snackbarHostState.showSnackbar(passwordsDoNotMatch) }
                                     } else {
+                                        hasAttemptedAuth = true
                                         viewModel.finalizeSignUp(password.trim())
                                     }
                                 }
@@ -395,7 +403,10 @@ fun AuthScreen(
                         }
 
                         Button(
-                            onClick = { viewModel.loginWithGoogle() },
+                            onClick = { 
+                                hasAttemptedAuth = true
+                                viewModel.loginWithGoogle() 
+                            },
                             enabled = authState !is AuthState.Loading,
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(12.dp),
