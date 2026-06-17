@@ -108,6 +108,7 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.auth)
+    implementation(libs.supabase.storage)
 
     // Ktor HTTP Engine
     implementation(libs.ktor.client.okhttp)

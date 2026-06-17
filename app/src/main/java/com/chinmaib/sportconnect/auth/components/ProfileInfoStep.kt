@@ -46,6 +46,7 @@ import java.util.*
 @Composable
 fun ProfileInfoStep(
     userName: String,
+    onNameChanged: (String) -> Unit,
     selectedImageUri: Uri?,
     onImageSelected: (Uri?) -> Unit,
     selectedDob: String,
@@ -159,14 +160,7 @@ fun ProfileInfoStep(
             }
         }
 
-        Text(
-            text = userName.ifBlank { stringResource(R.string.new_athlete_default) },
-            color = Color.White,
-            fontSize = 24.sp,
-            fontFamily = Montserrat,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 24.dp, bottom = 32.dp)
-        )
+        Spacer(modifier = Modifier.height(24.dp))
 
         Column(
             modifier = Modifier
@@ -176,17 +170,30 @@ fun ProfileInfoStep(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            StyledTextField(
+                value = userName,
+                onValueChange = onNameChanged,
+                label = "Full Name",
+                placeholder = "Enter your full name"
+            )
 
-            Box(modifier = Modifier.fillMaxWidth()) {
-                StyledTextField(
-                    value = selectedDob,
-                    onValueChange = {},
-                    label = stringResource(R.string.dob_label),
-                    placeholder = stringResource(R.string.dob_placeholder),
-                    trailingIcon = { Icon(imageVector = Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.select_date_desc), tint = TextMuted) }
-                )
-                Box(modifier = Modifier.matchParentSize().clickable { showDatePicker.value = true }.background(Color.Transparent))
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            StyledTextField(
+                value = selectedDob,
+                onValueChange = {},
+                label = stringResource(R.string.dob_label),
+                placeholder = stringResource(R.string.dob_placeholder),
+                readOnly = true,
+                onClick = { showDatePicker.value = true },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.CalendarMonth,
+                        contentDescription = stringResource(R.string.select_date_desc),
+                        tint = if (selectedDob.isEmpty()) TextMuted else GoldPrimary
+                    )
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -204,7 +211,7 @@ fun ProfileInfoStep(
 
         Button(
             onClick = onNext,
-            enabled = selectedDob.isNotBlank() && phoneNumber.length >= 8,
+            enabled = userName.isNotBlank() && selectedDob.isNotBlank() && phoneNumber.length >= 8,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
             shape = RoundedCornerShape(12.dp),

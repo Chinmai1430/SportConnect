@@ -27,11 +27,12 @@ data class Sport(val name: String, val imageUrl: String)
 @Composable
 fun ProfileSetupScreen(
     userName: String,
-    onComplete: (Uri?, String, String, List<String>, List<String>, List<String>) -> Unit,
+    onComplete: (Uri?, String, String, String, List<String>, List<String>, List<String>) -> Unit,
 ) {
     var currentStep by remember { mutableStateOf(SetupStep.PROFILE_INFO) }
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var editedName by remember { mutableStateOf(userName) }
     var selectedDob by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     val selectedSports = remember { mutableStateListOf<String>() }
@@ -54,7 +55,8 @@ fun ProfileSetupScreen(
         when (currentStep) {
             SetupStep.PROFILE_INFO -> {
                 ProfileInfoStep(
-                    userName = userName,
+                    userName = editedName,
+                    onNameChanged = { editedName = it },
                     selectedImageUri = selectedImageUri,
                     onImageSelected = { selectedImageUri = it },
                     selectedDob = selectedDob,
@@ -95,7 +97,7 @@ fun ProfileSetupScreen(
                     selectedTeams = selectedTeams,
                     onBack = { currentStep = SetupStep.PLAYER_SELECTION },
                     onFinish = {
-                        onComplete(selectedImageUri, selectedDob, phoneNumber, selectedSports.toList(), selectedPlayers.toList(), selectedTeams.toList())
+                        onComplete(selectedImageUri, editedName, selectedDob, phoneNumber, selectedSports.toList(), selectedPlayers.toList(), selectedTeams.toList())
                     }
                 )
             }

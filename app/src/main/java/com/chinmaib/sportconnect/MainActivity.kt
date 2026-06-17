@@ -14,7 +14,11 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import com.chinmaib.sportconnect.auth.AuthScreen
+import com.chinmaib.sportconnect.auth.AuthViewModel
 import com.chinmaib.sportconnect.auth.ProfileSetupScreen
 import com.chinmaib.sportconnect.auth.SplashScreen
 import com.chinmaib.sportconnect.ui.creator.SportsCreatorScreen
@@ -98,13 +102,22 @@ fun SportConnectNavigation() {
         }
 
         composable("profile_setup/{userName}") { backStackEntry ->
+            val authViewModel: AuthViewModel = hiltViewModel()
             val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
             val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
+            val context = androidx.compose.ui.platform.LocalContext.current
 
-            ProfileSetupScreen(userName = userName) { _, _, _, _, _, _ ->
-                navController.navigate("home") {
-                    popUpTo("auth") { inclusive = true }
-                    popUpTo("profile_setup/{userName}") { inclusive = true }
+            ProfileSetupScreen(userName = userName) { imageUri, fullName, dob, phone, _, _, _ ->
+                authViewModel.saveProfile(imageUri, fullName, dob, phone, context)
+            }
+            
+            val authState by authViewModel.authState.collectAsState()
+            LaunchedEffect(authState) {
+                if (authState is com.chinmaib.sportconnect.auth.AuthState.Authenticated) {
+                    navController.navigate("home") {
+                        popUpTo("auth") { inclusive = true }
+                        popUpTo("profile_setup/{userName}") { inclusive = true }
+                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 @file:Suppress("SpellCheckingInspection")
 package com.chinmaib.sportconnect.auth
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -67,8 +68,10 @@ fun StyledTextField(
     label: String,
     isPassword: Boolean = false,
     isNumber: Boolean = false,
+    readOnly: Boolean = false,
     placeholder: String? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
 ) {
     var isPasswordVisible by remember { mutableStateOf(value = false) }
 
@@ -79,6 +82,7 @@ fun StyledTextField(
         placeholder = placeholder?.let { { Text(text = it, fontFamily = OpenSans) } },
         visualTransformation = if (isPassword && !isPasswordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text),
+        readOnly = readOnly,
         trailingIcon = {
             if (isPassword) {
                 IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
@@ -92,19 +96,27 @@ fun StyledTextField(
                 trailingIcon?.invoke()
             }
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+        enabled = onClick == null, // This allows click handling if onClick is provided without focus issues
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = GoldPrimary,
             unfocusedBorderColor = ElevatedBorders,
+            disabledBorderColor = ElevatedBorders, // Matches unfocused for clickable-only fields
             focusedTextColor = TextPrimary,
             unfocusedTextColor = TextPrimary,
+            disabledTextColor = TextPrimary,
             cursorColor = GoldPrimary,
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent,
             focusedLabelColor = GoldPrimary,
             unfocusedLabelColor = TextSecondary,
+            disabledLabelColor = TextSecondary,
             focusedPlaceholderColor = TextMuted,
-            unfocusedPlaceholderColor = TextMuted
+            unfocusedPlaceholderColor = TextMuted,
+            disabledPlaceholderColor = TextMuted
         ),
         shape = RoundedCornerShape(12.dp),
         singleLine = true,

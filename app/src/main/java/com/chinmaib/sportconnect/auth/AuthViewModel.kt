@@ -11,6 +11,8 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +29,8 @@ sealed class AuthState {
     data object Authenticated : AuthState()
     data object OtpSent : AuthState()
     data object OtpVerified : AuthState()
+    data object ResetOtpSent : AuthState()
+    data object ResetOtpVerified : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -41,6 +45,7 @@ data class UserProfile(
 class AuthViewModel @Inject constructor(
     val auth: Auth,
     private val postgrest: Postgrest,
+    private val storage: Storage,
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -200,20 +205,106 @@ class AuthViewModel @Inject constructor(
     }
     */
 
-    fun sendPasswordReset(emailInput: String) {
+    fun sendPasswordResetOtp(emailInput: String) {
+        if (!isConfigValid()) { emitConfigError(); return }
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                auth.resetPasswordForEmail(emailInput)
+                // We use OTP sign in as a bridge to verify the email and get a session, 
+                // allowing the user to then update their password.
+                auth.signInWith(OTP) {
+                    email = emailInput
+                    createUser = false
+                }
+                _authState.value = AuthState.ResetOtpSent
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send reset code.")
+            }
+        }
+    }
+
+    fun verifyResetOtp(emailInput: String, otpInput: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                auth.verifyEmailOtp(
+                    type = OtpType.Email.EMAIL,
+                    email = emailInput,
+                    token = otpInput,
+                )
+                _authState.value = AuthState.ResetOtpVerified
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Invalid reset code.")
+            }
+        }
+    }
+
+    fun updatePassword(newPasswordInput: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                auth.updateUser {
+                    password = newPasswordInput
+                }
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send reset email.")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to update password.")
+            }
+        }
+    }
+
+    fun saveProfile(
+        imageUri: android.net.Uri?,
+        fullName: String,
+        dob: String,
+        phone: String,
+        context: android.content.Context
+    ) {
+        val user = auth.currentUserOrNull() ?: return
+
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                var avatarUrl: String? = null
+
+                // 1. Upload image if available
+                imageUri?.let { uri ->
+                    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    if (bytes != null) {
+                        val fileName = "${user.id}/avatar.jpg"
+                        storage["avatars"].upload(fileName, bytes) {
+                            upsert = true
+                        }
+                        avatarUrl = storage["avatars"].publicUrl(fileName)
+                    }
+                }
+
+                // 2. Update profile in database
+                val profileUpdate = mutableMapOf<String, Any>(
+                    "id" to user.id,
+                    "full_name" to fullName,
+                    "dob" to dob,
+                    "phone" to phone,
+                    "onboarding_completed" to true
+                )
+                
+                avatarUrl?.let { profileUpdate["avatar_url"] = it }
+
+                postgrest["profiles"].upsert(profileUpdate)
+
+                _authState.value = AuthState.Authenticated
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to save profile")
             }
         }
     }
 
     fun resetState() {
-        if ((_authState.value is AuthState.Error) || (_authState.value is AuthState.OtpSent) || (_authState.value is AuthState.Success)) {
+        if ((_authState.value is AuthState.Error) || 
+            (_authState.value is AuthState.OtpSent) || 
+            (_authState.value is AuthState.Success) ||
+            (_authState.value is AuthState.ResetOtpSent)
+        ) {
             _authState.value = AuthState.Idle
         }
     }
