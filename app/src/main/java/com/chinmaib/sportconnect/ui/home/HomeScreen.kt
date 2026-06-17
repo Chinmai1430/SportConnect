@@ -65,7 +65,7 @@ fun HomeScreen(
                             selectedTextColor = GoldPrimary,
                             unselectedTextColor = TextMuted,
                             indicatorColor = Color.Transparent,
-                        )
+                        ),
                     )
                 }
             }

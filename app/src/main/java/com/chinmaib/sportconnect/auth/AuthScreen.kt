@@ -34,7 +34,7 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onAuthSuccess: (isLogin: Boolean, userName: String) -> Unit,
 ) {
-    var isLoginMode by remember { mutableStateOf(true) }
+    var isLoginMode by remember { mutableStateOf(value = true) }
     var isForgotPasswordMode by remember { mutableStateOf(false) }
     var forgotPasswordStep by remember { mutableStateOf(ForgotPasswordStep.EMAIL_ENTRY) }
 
@@ -220,7 +220,7 @@ fun AuthScreen(
                                     onValueChange = { if (it.length <= 6) resetOtpInput = it },
                                     label = "6-Digit Code",
                                     placeholder = "Enter the code from your email",
-                                    isNumber = true
+                                    isNumber = true,
                                 )
                             }
                             ForgotPasswordStep.NEW_PASSWORD -> {
@@ -520,7 +520,7 @@ fun AuthScreen(
                         }
                     }
 
-                    if (!isForgotPasswordMode || forgotPasswordStep != ForgotPasswordStep.NEW_PASSWORD) {
+                    if (!isForgotPasswordMode || (forgotPasswordStep != ForgotPasswordStep.NEW_PASSWORD)) {
                         Spacer(modifier = Modifier.height(20.dp))
 
                         TextButton(

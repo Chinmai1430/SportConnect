@@ -150,8 +150,9 @@ fun SportConnectNavigation() {
                 viewModel = homeViewModel,
                 onNavigateToCreator = { navController.navigate("sports_creator") },
                 onNavigateToRoster = { navController.navigate("roster_list") },
-                onNavigateToMatches = { navController.navigate("matches_list") },
-            )
+            ) {
+                navController.navigate("matches_list")
+            }
         }
 
         composable("roster_list") {

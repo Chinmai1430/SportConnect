@@ -53,17 +53,16 @@ fun ProfileInfoStep(
     onDobSelected: (String) -> Unit,
     phoneNumber: String,
     onPhoneChanged: (String) -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
 ) {
-    val showDatePicker = remember { mutableStateOf(false) }
+    val showDatePicker = remember { mutableStateOf(value = false) }
     val datePickerState = rememberDatePickerState()
     val adjustProfileTitle = stringResource(R.string.adjust_profile_title)
 
     // Automatic Country Code Detection
     LaunchedEffect(Unit) {
         if (phoneNumber.isEmpty()) {
-            val countryCode = Locale.getDefault().country
-            val dialCode = when (countryCode) {
+            val dialCode = when (Locale.getDefault().country) {
                 "IN" -> "+91 "
                 "US" -> "+1 "
                 "GB" -> "+44 "
@@ -94,8 +93,8 @@ fun ProfileInfoStep(
                     activityTitle = adjustProfileTitle,
                     activityMenuIconColor = android.graphics.Color.WHITE,
                     cropMenuCropButtonTitle = "SAVE",
-                    backgroundColor = "#111111".toColorInt()
-                )
+                    backgroundColor = "#111111".toColorInt(),
+                ),
             )
             cropImageLauncher.launch(cropOptions)
         }
@@ -211,7 +210,7 @@ fun ProfileInfoStep(
 
         Button(
             onClick = onNext,
-            enabled = userName.isNotBlank() && selectedDob.isNotBlank() && phoneNumber.length >= 8,
+            enabled = (userName.isNotBlank() && selectedDob.isNotBlank() && (phoneNumber.length >= 8)),
             modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
             shape = RoundedCornerShape(12.dp),
@@ -226,16 +225,18 @@ fun ProfileInfoStep(
         DatePickerDialog(
             onDismissRequest = { showDatePicker.value = false },
             confirmButton = {
-                TextButton(onClick = {
-                    showDatePicker.value = false
-                    val utcTimeMillis = datePickerState.selectedDateMillis
-                    if (utcTimeMillis != null) {
-                        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).apply {
-                            timeZone = TimeZone.getTimeZone("UTC")
+                TextButton(
+                    onClick = {
+                        showDatePicker.value = false
+                        val utcTimeMillis = datePickerState.selectedDateMillis
+                        if (utcTimeMillis != null) {
+                            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }
+                            onDobSelected(formatter.format(Date(utcTimeMillis)))
                         }
-                        onDobSelected(formatter.format(Date(utcTimeMillis)))
-                    }
-                }) {
+                    },
+                ) {
                     Text(text = stringResource(R.string.confirm), color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                 }
             },

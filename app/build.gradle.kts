@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -62,15 +63,6 @@ kotlin {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         // Prevents colons in module names introduced in Kotlin 2.4.0 from breaking Hilt
         freeCompilerArgs.add("-Xmodule-name=SportConnect_App")
-    }
-}
-
-// Forces Hilt to use the newer metadata library to support Kotlin 2.4.0
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.jetbrains.kotlinx" && requested.name == "kotlinx-metadata-jvm") {
-            useVersion("0.9.0")
-        }
     }
 }
 

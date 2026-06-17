@@ -270,7 +270,7 @@ class AuthViewModel @Inject constructor(
         fullName: String,
         dob: String,
         phone: String,
-        context: android.content.Context
+        context: android.content.Context,
     ) {
         val user = auth.currentUserOrNull() ?: return
 
@@ -298,7 +298,7 @@ class AuthViewModel @Inject constructor(
                     dob = dob,
                     phone = phone,
                     onboardingCompleted = true,
-                    avatarUrl = avatarUrl
+                    avatarUrl = avatarUrl,
                 )
 
                 postgrest["profiles"].upsert(profileUpdate)

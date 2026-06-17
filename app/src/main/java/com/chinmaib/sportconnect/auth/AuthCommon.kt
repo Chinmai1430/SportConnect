@@ -116,7 +116,7 @@ fun StyledTextField(
             disabledLabelColor = TextSecondary,
             focusedPlaceholderColor = TextMuted,
             unfocusedPlaceholderColor = TextMuted,
-            disabledPlaceholderColor = TextMuted
+            disabledPlaceholderColor = TextMuted,
         ),
         shape = RoundedCornerShape(12.dp),
         singleLine = true,

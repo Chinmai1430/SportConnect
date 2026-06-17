@@ -1,6 +1,7 @@
 [versions]
 agp = "9.2.1"
 kotlin = "2.3.10"
+kotlinSerialization = "2.3.10"
 appcompat = "1.7.1"
 coreKtx = "1.19.0"
 junit = "4.13.2"
@@ -9,7 +10,6 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
 composeBom = "2026.05.01"
-kotlinxMetadata = "0.9.0"
 
 # Hilt & KSP Versions
 hilt = "2.59.2"
@@ -61,11 +61,11 @@ ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.r
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 logback-android = { group = "com.github.tony19", name = "logback-android", version.ref = "logback" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging-android", version.ref = "kotlinLogging" }
-kotlinx-metadata-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-metadata-jvm", version.ref = "kotlinxMetadata" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
 
 # Added Hilt & KSP Plugins
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
