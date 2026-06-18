@@ -1,29 +1,43 @@
-@file:Suppress("SpellCheckingInspection")
 package com.chinmaib.sportconnect.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 private val SportConnectColorScheme = darkColorScheme(
-    primary = GoldPrimary,
-    onPrimary = Color.Black,
-    primaryContainer = GoldDark,
-    onPrimaryContainer = Color.White,
-    secondary = GoldLight,
+    primary = AppPrimaryBrand,
+    onPrimary = Color.White,
+    primaryContainer = SurfaceContainer,
+    onPrimaryContainer = AppPrimaryBrand,
+    
+    secondary = AccentGold,
     onSecondary = Color.Black,
+    
     background = PrimaryBackground,
     onBackground = TextPrimary,
-    surface = SurfaceCards,
+    
+    surface = SurfaceContainer,
     onSurface = TextPrimary,
+    
     surfaceVariant = ElevatedBorders,
     onSurfaceVariant = TextSecondary,
+    
     outline = ElevatedBorders,
     error = StatusLossError,
-    onError = Color.Black,
+    onError = Color.White,
+    
     tertiary = StatusInfo,
     onTertiary = Color.White
+)
+
+val BentoShapes = Shapes(
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp) // Premium Bento Box UI
 )
 
 @Composable
@@ -33,6 +47,7 @@ fun SportConnectTheme(
     MaterialTheme(
         colorScheme = SportConnectColorScheme,
         typography = Typography,
+        shapes = BentoShapes,
         content = content,
     )
 }

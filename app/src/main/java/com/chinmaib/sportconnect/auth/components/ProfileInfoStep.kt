@@ -36,7 +36,6 @@ import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 import com.chinmaib.sportconnect.R
-import com.chinmaib.sportconnect.auth.Montserrat
 import com.chinmaib.sportconnect.auth.StyledTextField
 import com.chinmaib.sportconnect.ui.theme.*
 import java.text.SimpleDateFormat
@@ -90,11 +89,11 @@ fun ProfileInfoStep(
                     fixAspectRatio = true,
                     aspectRatioX = 1,
                     aspectRatioY = 1,
-                    toolbarColor = "#111111".toColorInt(),
+                    toolbarColor = "#0F172A".toColorInt(),
                     activityTitle = adjustProfileTitle,
                     activityMenuIconColor = android.graphics.Color.WHITE,
                     cropMenuCropButtonTitle = "SAVE",
-                    backgroundColor = "#111111".toColorInt()
+                    backgroundColor = "#0F172A".toColorInt()
                 )
             )
             cropImageLauncher.launch(cropOptions)
@@ -134,8 +133,8 @@ fun ProfileInfoStep(
             modifier = Modifier
                 .size(140.dp)
                 .clip(CircleShape)
-                .background(SurfaceCards)
-                .border(2.dp, if (selectedImageUri == null) ElevatedBorders else GoldPrimary, CircleShape)
+                .background(SurfaceContainer)
+                .border(2.dp, if (selectedImageUri == null) ElevatedBorders else AppPrimaryBrand, CircleShape)
                 .clickable {
                     photoPickerLauncher.launch(
                         PickVisualMediaRequest(
@@ -160,14 +159,14 @@ fun ProfileInfoStep(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceCards, RoundedCornerShape(16.dp))
-                .border(1.dp, ElevatedBorders, RoundedCornerShape(16.dp))
-                .padding(20.dp),
+                .background(SurfaceContainer, RoundedCornerShape(24.dp)) // Bento Shape
+                .border(1.dp, ElevatedBorders, RoundedCornerShape(24.dp))
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             StyledTextField(
@@ -190,7 +189,7 @@ fun ProfileInfoStep(
                     Icon(
                         imageVector = Icons.Filled.CalendarMonth,
                         contentDescription = stringResource(R.string.select_date_desc),
-                        tint = if (selectedDob.isEmpty()) TextMuted else GoldPrimary
+                        tint = if (selectedDob.isEmpty()) TextMuted else AppPrimaryBrand
                     )
                 }
             )
@@ -207,14 +206,14 @@ fun ProfileInfoStep(
             )
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
         Button(
             onClick = onNext,
             enabled = userName.isNotBlank() && selectedDob.isNotBlank() && phoneNumber.length >= 8,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
-            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = Color.Black),
+            shape = RoundedCornerShape(18.dp),
         ) {
             Text(text = "CONTINUE", fontFamily = Montserrat, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
@@ -236,7 +235,7 @@ fun ProfileInfoStep(
                         onDobSelected(formatter.format(Date(utcTimeMillis)))
                     }
                 }) {
-                    Text(text = stringResource(R.string.confirm), color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                    Text(text = stringResource(R.string.confirm), color = AppPrimaryBrand, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -244,7 +243,7 @@ fun ProfileInfoStep(
                     Text(text = stringResource(R.string.cancel), color = TextMuted, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = SurfaceCards),
+            colors = DatePickerDefaults.colors(containerColor = SurfaceContainer),
         ) {
             DatePicker(
                 state = datePickerState,
@@ -253,10 +252,10 @@ fun ProfileInfoStep(
                     headlineContentColor = TextPrimary,
                     weekdayContentColor = TextSecondary,
                     dayContentColor = TextPrimary,
-                    todayContentColor = GoldPrimary,
-                    todayDateBorderColor = GoldPrimary,
-                    selectedDayContainerColor = GoldPrimary,
-                    selectedDayContentColor = Color.Black,
+                    todayContentColor = AppPrimaryBrand,
+                    todayDateBorderColor = AppPrimaryBrand,
+                    selectedDayContainerColor = AppPrimaryBrand,
+                    selectedDayContentColor = Color.White,
                 ),
             )
         }

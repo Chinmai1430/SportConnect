@@ -23,11 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.AsyncImage
 import com.chinmaib.sportconnect.auth.FamousPlayer
-import com.chinmaib.sportconnect.auth.Montserrat
 import com.chinmaib.sportconnect.ui.theme.*
 
 @Composable
@@ -77,7 +74,6 @@ fun PlayerSelectionStep(
             textAlign = TextAlign.Center
         )
 
-        // ── Search bar ────────────────────────────────────────────────────
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -113,21 +109,20 @@ fun PlayerSelectionStep(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
-                focusedBorderColor = GoldPrimary,
+                focusedBorderColor = AppPrimaryBrand,
                 unfocusedBorderColor = ElevatedBorders,
-                cursorColor = GoldPrimary,
-                focusedContainerColor = SurfaceCards,
-                unfocusedContainerColor = SurfaceCards
+                cursorColor = AppPrimaryBrand,
+                focusedContainerColor = SurfaceContainer,
+                unfocusedContainerColor = SurfaceContainer
             ),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(18.dp),
             singleLine = true
         )
 
-        // ── Selected count indicator ──────────────────────────────────────
         if (selectedPlayers.isNotEmpty()) {
             Text(
                 text = "${selectedPlayers.size} player${if (selectedPlayers.size > 1) "s" else ""} selected",
-                color = GoldPrimary,
+                color = AppPrimaryBrand,
                 fontFamily = Montserrat,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
@@ -137,7 +132,6 @@ fun PlayerSelectionStep(
             )
         }
 
-        // ── Empty state ───────────────────────────────────────────────────
         if (players.isEmpty()) {
             Text(
                 text = "No players found for your selected sports.\nYou can skip this step.",
@@ -157,10 +151,9 @@ fun PlayerSelectionStep(
                 modifier = Modifier.padding(top = 32.dp, bottom = 32.dp)
             )
         } else {
-            // ── Player list ───────────────────────────────────────────────
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
                 items(displayedPlayers) { player ->
@@ -179,7 +172,6 @@ fun PlayerSelectionStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ── Bottom buttons ────────────────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -191,12 +183,12 @@ fun PlayerSelectionStep(
                 modifier = Modifier
                     .weight(1f)
                     .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(18.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppPrimaryBrand.copy(alpha = 0.5f))
             ) {
                 Text(
                     text = "SKIP",
-                    color = GoldPrimary,
+                    color = AppPrimaryBrand,
                     fontFamily = Montserrat,
                     fontWeight = FontWeight.Bold
                 )
@@ -208,10 +200,10 @@ fun PlayerSelectionStep(
                     .weight(1f)
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GoldPrimary,
+                    containerColor = AccentGold,
                     contentColor = Color.Black
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(18.dp),
             ) {
                 Text(
                     text = "DONE",
@@ -227,7 +219,7 @@ fun PlayerSelectionStep(
         ) {
             Text(
                 text = "BACK TO SPORTS",
-                color = GoldPrimary,
+                color = AccentGold,
                 fontFamily = Montserrat,
                 fontWeight = FontWeight.SemiBold
             )
@@ -246,77 +238,57 @@ fun PlayerListItem(
             .fillMaxWidth()
             .clickable { onClick() }
             .background(
-                color = if (isSelected) GoldPrimary.copy(alpha = 0.1f) else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
+                color = if (isSelected) AppPrimaryBrand.copy(alpha = 0.1f) else Color.Transparent,
+                shape = RoundedCornerShape(24.dp) // Bento Shape
             )
             .border(
-                width = if (isSelected) 1.5.dp else 0.5.dp,
-                color = if (isSelected) GoldPrimary else ElevatedBorders,
-                shape = RoundedCornerShape(12.dp)
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) AppPrimaryBrand else ElevatedBorders,
+                shape = RoundedCornerShape(24.dp)
             )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Circular player photo
         Box(
             modifier = Modifier
                 .size(56.dp)
                 .clip(CircleShape)
                 .border(
                     width = if (isSelected) 2.dp else 1.dp,
-                    color = if (isSelected) GoldPrimary else ElevatedBorders,
+                    color = if (isSelected) AppPrimaryBrand else ElevatedBorders,
                     shape = CircleShape
                 )
-                .background(SurfaceCards),
+                .background(SurfaceContainer),
             contentAlignment = Alignment.Center
         ) {
-            SubcomposeAsyncImage(
+            AsyncImage(
                 model = player.imageUrl,
                 contentDescription = player.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(CircleShape)
-            ) {
-                when (painter.state) {
-                    is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
-                    else -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = player.name.take(1).uppercase(),
-                                color = if (isSelected) GoldPrimary else TextSecondary,
-                                fontFamily = Montserrat,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                        }
-                    }
-                }
-            }
+                    .clip(CircleShape),
+                alpha = if (isSelected) 1f else 0.8f
+            )
         }
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Player name
         Text(
             text = player.name,
-            color = if (isSelected) GoldPrimary else TextPrimary,
+            color = if (isSelected) AppPrimaryBrand else TextPrimary,
             fontFamily = Montserrat,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
 
-        // Checkmark when selected
         if (isSelected) {
             Icon(
                 imageVector = Icons.Filled.Check,
                 contentDescription = "Selected",
-                tint = GoldPrimary,
-                modifier = Modifier.size(20.dp)
+                tint = AppPrimaryBrand,
+                modifier = Modifier.size(24.dp)
             )
         }
     }

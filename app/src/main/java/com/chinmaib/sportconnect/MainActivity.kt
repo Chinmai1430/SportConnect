@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        enableEdgeToEdge() // DIRECTIVE: Edge-to-Edge
         super.onCreate(savedInstanceState)
         
         // ALTRON OAUTH CATCHER: Intercept deep links from Supabase
@@ -121,7 +123,7 @@ fun SportConnectNavigation() {
                         modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        androidx.compose.material3.CircularProgressIndicator(color = com.chinmaib.sportconnect.ui.theme.GoldPrimary)
+                        androidx.compose.material3.CircularProgressIndicator(color = com.chinmaib.sportconnect.ui.theme.AccentGold)
                     }
                 }
             }

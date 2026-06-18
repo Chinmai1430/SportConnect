@@ -1,4 +1,4 @@
-@file:Suppress("SpellCheckingInspection") // ALTRON: Silences all dictionary typo warnings
+@file:Suppress("SpellCheckingInspection")
 
 package com.chinmaib.sportconnect.auth
 
@@ -98,7 +98,6 @@ fun AuthScreen(
             is AuthState.Success -> {
                 if (isForgotPasswordMode) {
                     showSuccessDialog = true
-                    // Reset fields immediately
                     isForgotPasswordMode = false
                     isLoginMode = true
                     forgotPasswordStep = ForgotPasswordStep.EMAIL_ENTRY
@@ -140,13 +139,13 @@ fun AuthScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Transparent,
+        containerColor = PrimaryBackground,
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(PrimaryBackground)
-                .padding(paddingValues),
+                .padding(paddingValues)
+                .systemBarsPadding(), // DIRECTIVE: Safe Drawing Padding
             contentAlignment = Alignment.Center,
         ) {
             Column(
@@ -160,20 +159,20 @@ fun AuthScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 48.dp),
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.pitchup_logo),
                         contentDescription = stringResource(R.string.app_name),
-                        modifier = Modifier.size(42.dp),
+                        modifier = Modifier.size(48.dp),
                     )
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
                     Text(
                         text = stringResource(R.string.sportconnect_caps),
                         color = Color.White,
-                        fontSize = 24.sp,
+                        fontSize = 28.sp,
                         fontFamily = Montserrat,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp,
@@ -183,9 +182,9 @@ fun AuthScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(SurfaceCards, RoundedCornerShape(16.dp))
-                        .border(1.dp, ElevatedBorders, RoundedCornerShape(16.dp))
-                        .padding(20.dp),
+                        .background(SurfaceContainer, RoundedCornerShape(24.dp)) // DIRECTIVE: Bento Shape
+                        .border(1.dp, ElevatedBorders, RoundedCornerShape(24.dp))
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
@@ -200,8 +199,11 @@ fun AuthScreen(
                             isLoginMode -> stringResource(R.string.welcome_back)
                             else -> stringResource(R.string.create_account)
                         },
-                        color = Color.White, fontFamily = Montserrat, fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 16.dp).align(Alignment.Start),
+                        color = Color.White, 
+                        fontFamily = Montserrat, 
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(bottom = 24.dp).align(Alignment.Start),
                     )
 
                     if (isForgotPasswordMode) {
@@ -230,7 +232,7 @@ fun AuthScreen(
                                     label = "New Password",
                                     isPassword = true
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 StyledTextField(
                                     value = confirmPassword,
                                     onValueChange = { confirmPassword = it },
@@ -245,7 +247,7 @@ fun AuthScreen(
                                 value = fullName, onValueChange = { fullName = it },
                                 label = stringResource(R.string.full_name), placeholder = stringResource(R.string.name_placeholder),
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         StyledTextField(
@@ -276,11 +278,11 @@ fun AuthScreen(
                                                 isTimerActive = true
                                                 viewModel.sendOtp(email.trim())
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
+                                            colors = ButtonDefaults.buttonColors(containerColor = AppPrimaryBrand),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.padding(end = 6.dp).height(34.dp),
                                         ) {
-                                            Text(stringResource(R.string.verify), color = Color.Black, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                            Text(stringResource(R.string.verify), color = Color.White, fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                                         }
                                     }
                                 }
@@ -288,7 +290,7 @@ fun AuthScreen(
                         )
 
                         if (isOtpFieldVisible && !isCurrentEmailVerified && !isLoginMode) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             StyledTextField(
                                 value = otpInput,
                                 onValueChange = { otpInput = it },
@@ -299,7 +301,7 @@ fun AuthScreen(
                                         onClick = { viewModel.verifyOtp(email.trim(), otpInput.trim()) },
                                         enabled = otpInput.length >= 3,
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = GoldPrimary,
+                                            containerColor = AccentGold,
                                             disabledContainerColor = ElevatedBorders,
                                         ),
                                         shape = RoundedCornerShape(8.dp),
@@ -327,16 +329,16 @@ fun AuthScreen(
                                             viewModel.sendOtp(email.trim())
                                         },
                                         modifier = Modifier.height(36.dp), shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f)),
+                                        border = BorderStroke(1.dp, AppPrimaryBrand.copy(alpha = 0.5f)),
                                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                                     ) {
-                                        Text(stringResource(R.string.resend_otp_button), color = GoldPrimary, fontSize = 11.sp, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                                        Text(stringResource(R.string.resend_otp_button), color = AppPrimaryBrand, fontSize = 11.sp, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         StyledTextField(
                             value = password,
@@ -376,7 +378,7 @@ fun AuthScreen(
                         }
 
                         if (!isLoginMode) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             StyledTextField(
                                 value = confirmPassword,
                                 onValueChange = { confirmPassword = it },
@@ -397,7 +399,7 @@ fun AuthScreen(
                             Text(stringResource(R.string.forgot_password), color = TextSecondary, fontFamily = OpenSans, fontSize = 13.sp)
                         }
                     } else {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
 
                     Button(
@@ -464,8 +466,8 @@ fun AuthScreen(
                         },
                         enabled = authState !is AuthState.Loading,
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, disabledContainerColor = GoldDark),
-                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentGold, disabledContainerColor = ElevatedBorders),
+                        shape = RoundedCornerShape(18.dp),
                     ) {
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
@@ -489,7 +491,7 @@ fun AuthScreen(
 
                     if (isLoginMode && !isForgotPasswordMode) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             HorizontalDivider(modifier = Modifier.weight(1f), color = ElevatedBorders)
@@ -504,7 +506,7 @@ fun AuthScreen(
                             },
                             enabled = authState !is AuthState.Loading,
                             modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(18.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF1F1F1F)),
                             border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
                         ) {
@@ -521,7 +523,7 @@ fun AuthScreen(
                     }
 
                     if (!isForgotPasswordMode || forgotPasswordStep != ForgotPasswordStep.NEW_PASSWORD) {
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         TextButton(
                             onClick = {
@@ -548,7 +550,7 @@ fun AuthScreen(
                                     isLoginMode -> stringResource(R.string.need_account)
                                     else -> stringResource(R.string.already_on_roster)
                                 },
-                                color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 0.5.sp,
+                                color = AccentGold, fontFamily = Montserrat, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 0.5.sp,
                             )
                         }
                     }
@@ -562,7 +564,7 @@ fun AuthScreen(
             onDismissRequest = { showSuccessDialog = false },
             confirmButton = {
                 TextButton(onClick = { showSuccessDialog = false }) {
-                    Text("OK", color = GoldPrimary, fontWeight = FontWeight.Bold)
+                    Text("OK", color = AccentGold, fontWeight = FontWeight.Bold)
                 }
             },
             icon = {
@@ -589,7 +591,7 @@ fun AuthScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             },
-            containerColor = SurfaceCards,
+            containerColor = SurfaceContainer,
             shape = RoundedCornerShape(24.dp)
         )
     }
@@ -600,4 +602,3 @@ enum class ForgotPasswordStep {
     OTP_ENTRY,
     NEW_PASSWORD
 }
-

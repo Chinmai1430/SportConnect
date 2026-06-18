@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.postgrest.Postgrest
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -29,10 +31,14 @@ class CreatorViewModel @Inject constructor(
     private val _submitSuccess = MutableStateFlow(false)
     val submitSuccess = _submitSuccess.asStateFlow()
 
+    private val _uiErrorState = MutableSharedFlow<String>()
+    val uiErrorState = _uiErrorState.asSharedFlow()
+
     fun createEvent(title: String, sport: String, team: String, date: String) {
         viewModelScope.launch {
             _isSubmitting.value = true
             try {
+                // DIRECTIVE: Data Write with Supabase
                 val newEvent = NewEvent(
                     title = title,
                     sport_type = sport,
@@ -42,7 +48,8 @@ class CreatorViewModel @Inject constructor(
                 postgrest["events"].insert(newEvent)
                 _submitSuccess.value = true
             } catch (e: Exception) {
-                // Handle error
+                // DIRECTIVE: Strict try-catch and error emission
+                _uiErrorState.emit(e.localizedMessage ?: "Failed to create event. Please try again.")
             } finally {
                 _isSubmitting.value = false
             }

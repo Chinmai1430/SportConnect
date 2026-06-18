@@ -66,6 +66,7 @@ kotlinx-metadata-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-metada
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 # Added Hilt & KSP Plugins
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

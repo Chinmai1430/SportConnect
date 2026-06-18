@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,12 +34,13 @@ fun TeamSelectionStep(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GoldPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppPrimaryBrand)
             }
             Text(
-                "Select Favorite Teams",
+                "SELECT TEAMS",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
+                fontFamily = Montserrat,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -49,12 +49,13 @@ fun TeamSelectionStep(
             "Follow your favorite teams to get updates.",
             color = TextSecondary,
             fontSize = 14.sp,
+            fontFamily = Montserrat,
             modifier = Modifier.padding(bottom = 24.dp, start = 48.dp)
         )
 
         LazyColumn(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(teams) { team ->
                 val isSelected = selectedTeams.contains(team.name)
@@ -64,18 +65,19 @@ fun TeamSelectionStep(
                         .clickable {
                             if (isSelected) selectedTeams.remove(team.name) else selectedTeams.add(team.name)
                         },
+                    shape = RoundedCornerShape(24.dp), // Bento Shape
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) GoldPrimary.copy(alpha = 0.1f) else SurfaceCards
+                        containerColor = if (isSelected) AppPrimaryBrand.copy(alpha = 0.1f) else SurfaceContainer
                     ),
-                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary) else androidx.compose.foundation.BorderStroke(1.dp, ElevatedBorders)
+                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, AppPrimaryBrand) else androidx.compose.foundation.BorderStroke(1.dp, ElevatedBorders)
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(team.name, color = TextPrimary, fontWeight = FontWeight.Bold)
+                            Text(team.name, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Text(team.sport, color = TextSecondary, fontSize = 12.sp)
                         }
                         Checkbox(
@@ -83,7 +85,11 @@ fun TeamSelectionStep(
                             onCheckedChange = {
                                 if (isSelected) selectedTeams.remove(team.name) else selectedTeams.add(team.name)
                             },
-                            colors = CheckboxDefaults.colors(checkedColor = GoldPrimary, checkmarkColor = Color.Black, uncheckedColor = TextMuted)
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = AppPrimaryBrand,
+                                checkmarkColor = Color.White,
+                                uncheckedColor = TextMuted
+                            )
                         )
                     }
                 }
@@ -95,10 +101,10 @@ fun TeamSelectionStep(
         Button(
             onClick = onFinish,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
-            shape = RoundedCornerShape(12.dp)
+            colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = Color.Black),
+            shape = RoundedCornerShape(18.dp)
         ) {
-            Text("FINISH", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            Text("FINISH SETUP", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, fontFamily = Montserrat)
         }
     }
 }

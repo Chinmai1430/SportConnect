@@ -3,6 +3,7 @@ package com.chinmaib.sportconnect.ui.creator
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,8 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.chinmaib.sportconnect.ui.theme.*
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.flow.collectLatest
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,10 +37,17 @@ fun SportsCreatorScreen(
 
     val isSubmitting by viewModel.isSubmitting.collectAsState()
     val submitSuccess by viewModel.submitSuccess.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(submitSuccess) {
         if (submitSuccess) {
             onBack()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiErrorState.collectLatest { errorMessage ->
+            snackbarHostState.showSnackbar(errorMessage)
         }
     }
 
@@ -74,12 +84,21 @@ fun SportsCreatorScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Sports Creator", color = Color.White) },
+                title = { 
+                    Text(
+                        "Create Event", 
+                        color = Color.White, 
+                        fontFamily = Montserrat,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GoldPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppPrimaryBrand)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryBackground)
@@ -90,21 +109,27 @@ fun SportsCreatorScreen(
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(24.dp)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text("Schedule a New Match/Event", style = MaterialTheme.typography.titleLarge, color = GoldPrimary)
+            Text(
+                "New Sport Event", 
+                style = MaterialTheme.typography.headlineSmall, 
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
 
             OutlinedTextField(
                 value = matchTitle,
                 onValueChange = { matchTitle = it },
                 label = { Text("Match Title") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldPrimary,
-                    focusedLabelColor = GoldPrimary,
+                    focusedBorderColor = AppPrimaryBrand,
+                    focusedLabelColor = AppPrimaryBrand,
                     unfocusedBorderColor = ElevatedBorders,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
@@ -117,9 +142,10 @@ fun SportsCreatorScreen(
                 onValueChange = { sportType = it },
                 label = { Text("Sport Type") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldPrimary,
-                    focusedLabelColor = GoldPrimary,
+                    focusedBorderColor = AppPrimaryBrand,
+                    focusedLabelColor = AppPrimaryBrand,
                     unfocusedBorderColor = ElevatedBorders,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
@@ -130,11 +156,12 @@ fun SportsCreatorScreen(
             OutlinedTextField(
                 value = teamName,
                 onValueChange = { teamName = it },
-                label = { Text("Team Name") },
+                label = { Text("Team/Venue") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldPrimary,
-                    focusedLabelColor = GoldPrimary,
+                    focusedBorderColor = AppPrimaryBrand,
+                    focusedLabelColor = AppPrimaryBrand,
                     unfocusedBorderColor = ElevatedBorders,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
@@ -150,14 +177,15 @@ fun SportsCreatorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     readOnly = true,
                     isError = dateError != null,
+                    shape = RoundedCornerShape(18.dp),
                     trailingIcon = {
                         IconButton(onClick = { datePickerDialog.show() }) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Date", tint = GoldPrimary)
+                            Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Date", tint = AppPrimaryBrand)
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GoldPrimary,
-                        focusedLabelColor = GoldPrimary,
+                        focusedBorderColor = AppPrimaryBrand,
+                        focusedLabelColor = AppPrimaryBrand,
                         unfocusedBorderColor = ElevatedBorders,
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
@@ -170,18 +198,21 @@ fun SportsCreatorScreen(
                 Text(dateError!!, color = StatusLossError, style = MaterialTheme.typography.bodySmall)
             }
 
+            Spacer(modifier = Modifier.weight(1f))
+
             Button(
                 onClick = { 
                     viewModel.createEvent(matchTitle, sportType, teamName, selectedDate)
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = Color.Black),
+                shape = RoundedCornerShape(18.dp),
                 enabled = selectedDate.isNotBlank() && matchTitle.isNotBlank() && !isSubmitting
             ) {
                 if (isSubmitting) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
                 } else {
-                    Text("Create Event", fontWeight = FontWeight.Bold)
+                    Text("CREATE EVENT", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 }
             }
         }

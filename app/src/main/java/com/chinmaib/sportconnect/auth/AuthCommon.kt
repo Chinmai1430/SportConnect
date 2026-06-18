@@ -13,8 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -23,22 +21,11 @@ import androidx.compose.ui.unit.dp
 import com.chinmaib.sportconnect.R
 import com.chinmaib.sportconnect.ui.theme.*
 
-// Shared Fonts
-val Montserrat = FontFamily(
-    Font(R.font.montserrat_semi_bold, FontWeight.SemiBold),
-    Font(R.font.montserrat_bold, FontWeight.Bold),
-)
-
-val OpenSans = FontFamily(
-    Font(R.font.open_sans_regular, FontWeight.Normal),
-    Font(R.font.open_sans_semi_bold, FontWeight.SemiBold),
-)
-
 // Shared Utilities
 enum class PasswordStrength(val labelResId: Int?, val color: Color, val progress: Float) {
     NONE(null, Color.Transparent, 0f),
     WEAK(R.string.password_strength_weak, StatusLossError, 0.33f),
-    MODERATE(R.string.password_strength_moderate, GoldLight, 0.66f),
+    MODERATE(R.string.password_strength_moderate, AppPrimaryBrand, 0.66f),
     STRONG(R.string.password_strength_strong, StatusLiveWin, 1f)
 }
 
@@ -60,7 +47,6 @@ fun calculateStrength(password: String): PasswordStrength {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StyledTextField(
     value: String,
@@ -89,7 +75,7 @@ fun StyledTextField(
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                         contentDescription = if (isPasswordVisible) stringResource(R.string.hide_password_desc) else stringResource(R.string.show_password_desc),
-                        tint = GoldPrimary.copy(alpha = 0.7f),
+                        tint = AppPrimaryBrand.copy(alpha = 0.7f),
                     )
                 }
             } else {
@@ -99,26 +85,26 @@ fun StyledTextField(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-        enabled = onClick == null, // This allows click handling if onClick is provided without focus issues
+        enabled = onClick == null, 
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = GoldPrimary,
+            focusedBorderColor = AppPrimaryBrand,
             unfocusedBorderColor = ElevatedBorders,
-            disabledBorderColor = ElevatedBorders, // Matches unfocused for clickable-only fields
+            disabledBorderColor = ElevatedBorders,
             focusedTextColor = TextPrimary,
             unfocusedTextColor = TextPrimary,
             disabledTextColor = TextPrimary,
-            cursorColor = GoldPrimary,
+            cursorColor = AppPrimaryBrand,
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
             disabledContainerColor = Color.Transparent,
-            focusedLabelColor = GoldPrimary,
+            focusedLabelColor = AppPrimaryBrand,
             unfocusedLabelColor = TextSecondary,
             disabledLabelColor = TextSecondary,
             focusedPlaceholderColor = TextMuted,
             unfocusedPlaceholderColor = TextMuted,
             disabledPlaceholderColor = TextMuted
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(18.dp), // DIRECTIVE: Standardized rounded corners
         singleLine = true,
     )
 }
