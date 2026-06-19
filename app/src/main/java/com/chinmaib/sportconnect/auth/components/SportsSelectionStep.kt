@@ -21,10 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
-import com.chinmaib.sportconnect.auth.Montserrat
+import coil.compose.AsyncImage
 import com.chinmaib.sportconnect.auth.Sport
 import com.chinmaib.sportconnect.ui.theme.*
 
@@ -89,7 +86,7 @@ fun SportsSelectionStep(
         }
 
         Spacer(modifier = Modifier.weight(1f))
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -98,18 +95,18 @@ fun SportsSelectionStep(
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.weight(1f).height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(18.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppPrimaryBrand.copy(alpha = 0.5f))
             ) {
-                Text(text = "BACK", color = GoldPrimary, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
+                Text(text = "BACK", color = AppPrimaryBrand, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
             }
 
             Button(
                 onClick = onNext,
                 enabled = selectedSports.isNotEmpty(),
                 modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = Color.Black),
-                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = Color.Black),
+                shape = RoundedCornerShape(18.dp),
             ) {
                 Text(text = "CONTINUE", fontFamily = Montserrat, fontWeight = FontWeight.Bold)
             }
@@ -139,38 +136,21 @@ fun VisualSelectionCard(
                 .clip(CircleShape)
                 .border(
                     width = if (isSelected) 3.dp else 1.dp,
-                    color = if (isSelected) GoldPrimary else ElevatedBorders,
+                    color = if (isSelected) AppPrimaryBrand else ElevatedBorders,
                     shape = CircleShape
                 )
-                .background(if (isSelected) SurfaceCards else SurfaceCards.copy(alpha = 0.5f)),
+                .background(if (isSelected) SurfaceContainer else SurfaceContainer.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center
         ) {
-            SubcomposeAsyncImage(
+            AsyncImage(
                 model = imageUrl,
                 contentDescription = name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(CircleShape)
-            ) {
-                when (painter.state) {
-                    is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
-                    else -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = name.take(1).uppercase(),
-                                color = if (isSelected) GoldPrimary else TextSecondary,
-                                fontFamily = Montserrat,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
-                            )
-                        }
-                    }
-                }
-            }
+                    .clip(CircleShape),
+                alpha = if (isSelected) 1f else 0.6f
+            )
 
             if (isSelected) {
                 Box(
@@ -182,7 +162,7 @@ fun VisualSelectionCard(
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = "Selected",
-                        tint = GoldPrimary,
+                        tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -193,7 +173,7 @@ fun VisualSelectionCard(
 
         Text(
             text = name,
-            color = if (isSelected) GoldPrimary else TextPrimary,
+            color = if (isSelected) AppPrimaryBrand else TextPrimary,
             fontFamily = Montserrat,
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
