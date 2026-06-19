@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
+import java.util.regex.Pattern
 
 sealed class AuthState {
     data object Idle : AuthState()
@@ -64,6 +65,11 @@ class AuthViewModel @Inject constructor(
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     private val redirectUrl = "sportconnect://login-callback"
+    
+    // SECURITY: Email Regex Pattern (Simplified and Corrected)
+    private val emailPattern = Pattern.compile(
+        "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$",
+    )
 
     private fun isConfigValid(): Boolean {
         return (BuildConfig.SUPABASE_URL.isNotBlank() &&
@@ -71,7 +77,7 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun emitConfigError() {
-        _authState.value = AuthState.Error("Supabase keys missing! Please add them to local.properties and rebuild.")
+        _authState.value = AuthState.Error("Configuration Error: Security keys missing.")
     }
 
     init {
@@ -102,7 +108,6 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                // Fetch only the boolean first to avoid serialization issues with complex types
                 val response = postgrest["profiles"]
                     .select(columns = Columns.list("onboarding_completed")) {
                         filter {
@@ -110,7 +115,6 @@ class AuthViewModel @Inject constructor(
                         }
                     }
                 
-                // Log the response or check manually
                 val profile = response.decodeSingleOrNull<UserProfile>()
 
                 if (profile?.onboardingCompleted == true) {
@@ -119,70 +123,102 @@ class AuthViewModel @Inject constructor(
                     _authState.value = AuthState.OnboardingRequired
                 }
             } catch (_: Exception) {
-                // If the error is exactly about decoding, we fallback to onboarding
+                // FALLBACK: If profile doesn't exist yet, it's a new user requiring onboarding
                 _authState.value = AuthState.OnboardingRequired
             }
         }
     }
 
+    private fun validateEmail(email: String): Boolean {
+        return email.isNotBlank() && emailPattern.matcher(email).matches()
+    }
+
     fun sendOtp(emailInput: String) {
         if (!isConfigValid()) { emitConfigError(); return }
+        val sanitizedEmail = emailInput.trim()
+        if (!validateEmail(sanitizedEmail)) {
+            _authState.value = AuthState.Error("Invalid email format.")
+            return
+        }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.signInWith(OTP) {
-                    email = emailInput
+                    email = sanitizedEmail
                     createUser = true
                 }
                 _authState.value = AuthState.OtpSent
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send OTP.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Service error: Unable to dispatch OTP.")
             }
         }
     }
 
     fun verifyOtp(emailInput: String, otpInput: String) {
+        val sanitizedEmail = emailInput.trim()
+        val sanitizedOtp = otpInput.trim()
+        
+        if (sanitizedOtp.length < 6) {
+            _authState.value = AuthState.Error("OTP must be 6 digits.")
+            return
+        }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.verifyEmailOtp(
                     type = OtpType.Email.EMAIL,
-                    email = emailInput,
-                    token = otpInput,
+                    email = sanitizedEmail,
+                    token = sanitizedOtp,
                 )
                 _authState.value = AuthState.OtpVerified
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Invalid OTP.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Verification failed: Invalid or expired OTP.")
             }
         }
     }
 
     fun finalizeSignUp(passwordInput: String) {
+        val sanitizedPassword = passwordInput.trim()
+        if (sanitizedPassword.length < 8) {
+            _authState.value = AuthState.Error("Security Requirement: Password too short.")
+            return
+        }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.updateUser {
-                    password = passwordInput
+                    password = sanitizedPassword
                 }
                 _authState.value = AuthState.Success
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to finalize account.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Account Update Failed: Check connection.")
             }
         }
     }
 
     fun login(emailInput: String, passwordInput: String) {
         if (!isConfigValid()) { emitConfigError(); return }
+        val sanitizedEmail = emailInput.trim()
+        val sanitizedPassword = passwordInput.trim()
+
+        if (!validateEmail(sanitizedEmail)) {
+            _authState.value = AuthState.Error("Invalid email.")
+            return
+        }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.signInWith(Email) {
-                    email = emailInput
-                    password = passwordInput
+                    email = sanitizedEmail
+                    password = sanitizedPassword
                 }
                 checkProfileStatus()
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Login failed.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Access Denied: Invalid credentials.")
             }
         }
     }
@@ -193,74 +229,69 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Loading
             try {
                 auth.signInWith(Google, redirectUrl = redirectUrl)
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Google Sign-In failed.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Auth Provider Error: Google Sign-In failed.")
             }
         }
     }
-
-    // Native Google Sign-In is reserved for future implementation using Credential Manager
-    /*
-    fun loginWithGoogleNative(idToken: String, nonce: String?) {
-        viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            try {
-                auth.signInWith(IDToken) {
-                    this.idToken = idToken
-                    this.nonce = nonce
-                }
-                checkProfileStatus()
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Native Google Sign-In failed.")
-            }
-        }
-    }
-    */
 
     fun sendPasswordResetOtp(emailInput: String) {
         if (!isConfigValid()) { emitConfigError(); return }
+        val sanitizedEmail = emailInput.trim()
+        if (!validateEmail(sanitizedEmail)) {
+            _authState.value = AuthState.Error("Invalid email.")
+            return
+        }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                // We use OTP sign in as a bridge to verify the email and get a session, 
-                // allowing the user to then update their password.
                 auth.signInWith(OTP) {
-                    email = emailInput
+                    email = sanitizedEmail
                     createUser = false
                 }
                 _authState.value = AuthState.ResetOtpSent
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to send reset code.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Recovery Failed: Check if email is registered.")
             }
         }
     }
 
     fun verifyResetOtp(emailInput: String, otpInput: String) {
+        val sanitizedEmail = emailInput.trim()
+        val sanitizedOtp = otpInput.trim()
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.verifyEmailOtp(
                     type = OtpType.Email.EMAIL,
-                    email = emailInput,
-                    token = otpInput,
+                    email = sanitizedEmail,
+                    token = sanitizedOtp,
                 )
                 _authState.value = AuthState.ResetOtpVerified
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Invalid reset code.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("Verification Failed: Code incorrect or expired.")
             }
         }
     }
 
     fun updatePassword(newPasswordInput: String) {
+        val sanitizedPassword = newPasswordInput.trim()
+        if (sanitizedPassword.length < 8) {
+            _authState.value = AuthState.Error("Security Requirement: 8+ characters required.")
+            return
+        }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 auth.updateUser {
-                    password = newPasswordInput
+                    password = sanitizedPassword
                 }
                 _authState.value = AuthState.Success
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to update password.")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("System Error: Failed to commit new password.")
             }
         }
     }
@@ -273,6 +304,13 @@ class AuthViewModel @Inject constructor(
         context: android.content.Context,
     ) {
         val user = auth.currentUserOrNull() ?: return
+        val sanitizedName = fullName.trim()
+        val sanitizedPhone = phone.trim()
+
+        if ((sanitizedName.isBlank()) || (sanitizedName.length < 2)) {
+             _authState.value = AuthState.Error("Input Error: Full name is required.")
+             return
+        }
 
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -283,7 +321,8 @@ class AuthViewModel @Inject constructor(
                 imageUri?.let { uri ->
                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     if (bytes != null) {
-                        val fileName = "${user.id}/avatar.jpg"
+                        // PRODUCTION: Unique filename preventing collisions
+                        val fileName = "${user.id}/avatar_${System.currentTimeMillis()}.jpg"
                         storage["avatars"].upload(fileName, bytes) {
                             upsert = true
                         }
@@ -294,9 +333,9 @@ class AuthViewModel @Inject constructor(
                 // 2. Update profile in database
                 val profileUpdate = ProfileUpdate(
                     id = user.id,
-                    fullName = fullName,
+                    fullName = sanitizedName,
                     dob = dob,
-                    phone = phone,
+                    phone = sanitizedPhone,
                     onboardingCompleted = true,
                     avatarUrl = avatarUrl,
                 )
@@ -304,8 +343,8 @@ class AuthViewModel @Inject constructor(
                 postgrest["profiles"].upsert(profileUpdate)
 
                 _authState.value = AuthState.Authenticated
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Failed to save profile")
+            } catch (_: Exception) {
+                _authState.value = AuthState.Error("DB Error: Profile persistence failed.")
             }
         }
     }

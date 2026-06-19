@@ -55,10 +55,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge() // DIRECTIVE: Edge-to-Edge
         super.onCreate(savedInstanceState)
         
-        // ALTRON OAUTH CATCHER: Intercept deep links from Supabase
-        intent?.let {
-            supabaseClient.handleDeeplinks(it)
-        }
+        // SECURITY: Validate Deep Link Intent
+        handleDeepLink(intent)
 
         setContent {
             SportConnectTheme {
@@ -74,7 +72,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        supabaseClient.handleDeeplinks(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        intent?.let {
+            val data = it.data
+            // SECURITY: Only handle links that match our specific scheme to prevent intent hijacking
+            if ((data?.scheme == "sportconnect") && (data.host == "login-callback")) {
+                supabaseClient.handleDeeplinks(it)
+            }
+        }
     }
 }
 
@@ -99,8 +107,9 @@ fun SportConnectNavigation() {
                         popUpTo("auth") { inclusive = true }
                     }
                 } else {
-                    // Safely encode the name for URL transit
-                    val safeName = if (userName.isNotBlank()) URLEncoder.encode(userName, StandardCharsets.UTF_8.toString()) else "Athlete"
+                    // SECURITY: Strictly sanitize and encode name for URL transit
+                    val sanitized = userName.trim().take(50).replace(Regex("[^a-zA-Z\\s]"), "")
+                    val safeName = if (sanitized.isNotBlank()) URLEncoder.encode(sanitized, StandardCharsets.UTF_8.toString()) else "Athlete"
                     navController.navigate("profile_setup/$safeName")
                 }
             }
@@ -109,6 +118,7 @@ fun SportConnectNavigation() {
         composable("profile_setup/{userName}") { backStackEntry ->
             val authViewModel: AuthViewModel = hiltViewModel()
             val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
+            // SECURITY: Decode with explicit charset
             val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
             val context = androidx.compose.ui.platform.LocalContext.current
             val authState by authViewModel.authState.collectAsState()
@@ -137,7 +147,7 @@ fun SportConnectNavigation() {
                         }
                     }
                     is com.chinmaib.sportconnect.auth.AuthState.Error -> {
-                        // Show error if saving fails
+                        // PRODUCTION: Toast is fine for simple errors, but localized
                         android.widget.Toast.makeText(context, (authState as com.chinmaib.sportconnect.auth.AuthState.Error).message, android.widget.Toast.LENGTH_LONG).show()
                         authViewModel.resetState()
                     }
