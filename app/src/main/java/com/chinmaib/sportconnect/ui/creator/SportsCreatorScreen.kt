@@ -1,6 +1,9 @@
 package com.chinmaib.sportconnect.ui.creator
 
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,212 +11,142 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chinmaib.sportconnect.auth.StyledTextField
 import com.chinmaib.sportconnect.ui.theme.*
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import kotlinx.coroutines.flow.collectLatest
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SportsCreatorScreen(
-    viewModel: CreatorViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
+    var title by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("") }
+    val sportType by remember { mutableStateOf("Cricket") }
+
     val context = LocalContext.current
-    var matchTitle by remember { mutableStateOf("") }
-    var sportType by remember { mutableStateOf("") }
-    var teamName by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf("") }
-    var dateError by remember { mutableStateOf<String?>(null) }
-
-    val isSubmitting by viewModel.isSubmitting.collectAsState()
-    val submitSuccess by viewModel.submitSuccess.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(submitSuccess) {
-        if (submitSuccess) {
-            onBack()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.uiErrorState.collectLatest { errorMessage ->
-            snackbarHostState.showSnackbar(errorMessage)
-        }
-    }
-
     val calendar = Calendar.getInstance()
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val pickedDate = Calendar.getInstance().apply {
-                set(year, month, dayOfMonth, 0, 0, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-
-            if (pickedDate.before(today)) {
-                dateError = "Please select today or a future date"
-                selectedDate = ""
-            } else {
-                dateError = null
-                selectedDate = sdf.format(pickedDate.time)
-            }
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    ).apply {
-        datePicker.minDate = System.currentTimeMillis() - 1000
-    }
+    
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val sdf = remember(locale) { SimpleDateFormat("dd/MM/yyyy", locale) }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        "Create Event", 
-                        color = Color.White, 
-                        fontFamily = Montserrat,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    ) 
-                },
+            CenterAlignedTopAppBar(
+                title = { Text("CREATE MATCH", fontFamily = Montserrat, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppPrimaryBrand)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryBackground)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PrimaryBackground,
+                    titleContentColor = Color.White,
+                ),
             )
         },
-        containerColor = PrimaryBackground
+        containerColor = PrimaryBackground,
     ) { paddingValues ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(paddingValues)
                 .padding(24.dp)
-                .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Text(
-                "New Sport Event", 
-                style = MaterialTheme.typography.headlineSmall, 
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-
-            OutlinedTextField(
-                value = matchTitle,
-                onValueChange = { matchTitle = it },
-                label = { Text("Match Title") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppPrimaryBrand,
-                    focusedLabelColor = AppPrimaryBrand,
-                    unfocusedBorderColor = ElevatedBorders,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    unfocusedLabelColor = TextSecondary
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SurfaceContainer, RoundedCornerShape(24.dp))
+                    .border(1.dp, ElevatedBorders, RoundedCornerShape(24.dp))
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                StyledTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = "Match Title",
+                    placeholder = "e.g. Sunday Morning Friendly",
                 )
-            )
 
-            OutlinedTextField(
-                value = sportType,
-                onValueChange = { sportType = it },
-                label = { Text("Sport Type") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppPrimaryBrand,
-                    focusedLabelColor = AppPrimaryBrand,
-                    unfocusedBorderColor = ElevatedBorders,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    unfocusedLabelColor = TextSecondary
+                StyledTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = "Location",
+                    placeholder = "e.g. Central Park Ground",
+                    trailingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextMuted) },
                 )
-            )
 
-            OutlinedTextField(
-                value = teamName,
-                onValueChange = { teamName = it },
-                label = { Text("Team/Venue") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppPrimaryBrand,
-                    focusedLabelColor = AppPrimaryBrand,
-                    unfocusedBorderColor = ElevatedBorders,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    unfocusedLabelColor = TextSecondary
-                )
-            )
-
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = selectedDate,
+                StyledTextField(
+                    value = date,
                     onValueChange = { },
-                    label = { Text("Date & Time") },
-                    modifier = Modifier.fillMaxWidth(),
+                    label = "Date",
+                    placeholder = "Select Date",
                     readOnly = true,
-                    isError = dateError != null,
-                    shape = RoundedCornerShape(18.dp),
-                    trailingIcon = {
-                        IconButton(onClick = { datePickerDialog.show() }) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Date", tint = AppPrimaryBrand)
-                        }
+                    onClick = {
+                        DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                val cal = Calendar.getInstance().apply {
+                                    set(Calendar.YEAR, year)
+                                    set(Calendar.MONTH, month)
+                                    set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                }
+                                date = sdf.format(cal.time)
+                            },
+                            calendar[Calendar.YEAR],
+                            calendar[Calendar.MONTH],
+                            calendar[Calendar.DAY_OF_MONTH],
+                        ).show()
                     },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppPrimaryBrand,
-                        focusedLabelColor = AppPrimaryBrand,
-                        unfocusedBorderColor = ElevatedBorders,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        unfocusedLabelColor = TextSecondary,
-                        errorBorderColor = StatusLossError
-                    )
+                    trailingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = AccentGold) },
+                )
+
+                StyledTextField(
+                    value = time,
+                    onValueChange = { },
+                    label = "Time",
+                    placeholder = "Select Time",
+                    readOnly = true,
+                    onClick = {
+                        TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                time = String.format(locale, "%02d:%02d", hourOfDay, minute)
+                            },
+                            calendar[Calendar.HOUR_OF_DAY],
+                            calendar[Calendar.MINUTE],
+                            true,
+                        ).show()
+                    },
+                    trailingIcon = { Icon(Icons.Default.Schedule, contentDescription = null, tint = AccentGold) },
                 )
             }
-            if (dateError != null) {
-                Text(dateError!!, color = StatusLossError, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { 
-                    viewModel.createEvent(matchTitle, sportType, teamName, selectedDate)
-                },
+                onClick = { /* Logic to save to Supabase will go here with sportType */ println(sportType) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = Color.Black),
                 shape = RoundedCornerShape(18.dp),
-                enabled = selectedDate.isNotBlank() && matchTitle.isNotBlank() && !isSubmitting
+                enabled = title.isNotBlank() && location.isNotBlank() && date.isNotBlank() && time.isNotBlank(),
             ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
-                } else {
-                    Text("CREATE EVENT", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                }
+                Text("PUBLISH MATCH", fontFamily = Montserrat, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
             }
         }
     }

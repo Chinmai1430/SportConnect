@@ -34,8 +34,8 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onAuthSuccess: (isLogin: Boolean, userName: String) -> Unit,
 ) {
-    var isLoginMode by remember { mutableStateOf(true) }
-    var isForgotPasswordMode by remember { mutableStateOf(false) }
+    var isLoginMode by remember { mutableStateOf(value = true) }
+    var isForgotPasswordMode by remember { mutableStateOf(value = false) }
     var forgotPasswordStep by remember { mutableStateOf(ForgotPasswordStep.EMAIL_ENTRY) }
 
     var fullName by remember { mutableStateOf("") }
@@ -46,16 +46,16 @@ fun AuthScreen(
     var resetOtpInput by remember { mutableStateOf("") }
 
     var verifiedEmails by remember { mutableStateOf(setOf<String>()) }
-    var isOtpFieldVisible by remember { mutableStateOf(false) }
+    var isOtpFieldVisible by remember { mutableStateOf(value = false) }
     var otpInput by remember { mutableStateOf("") }
 
     var timeLeft by remember { mutableIntStateOf(60) }
-    var isTimerActive by remember { mutableStateOf(false) }
+    var isTimerActive by remember { mutableStateOf(value = false) }
 
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(value = false) }
 
     val isCurrentEmailVerified = verifiedEmails.contains(email.trim())
     val isEmailReadyToVerify = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
@@ -79,7 +79,7 @@ fun AuthScreen(
     val passwordsDoNotMatch = stringResource(R.string.passwords_do_not_match)
     val fieldsCompulsory = stringResource(R.string.fields_compulsory)
 
-    var hasAttemptedAuth by remember { mutableStateOf(false) }
+    var hasAttemptedAuth by remember { mutableStateOf(value = false) }
 
     LaunchedEffect(authState) {
         when (val currentAuthState = authState) {
@@ -222,7 +222,7 @@ fun AuthScreen(
                                     onValueChange = { if (it.length <= 6) resetOtpInput = it },
                                     label = "6-Digit Code",
                                     placeholder = "Enter the code from your email",
-                                    isNumber = true
+                                    isNumber = true,
                                 )
                             }
                             ForgotPasswordStep.NEW_PASSWORD -> {
@@ -230,14 +230,14 @@ fun AuthScreen(
                                     value = password,
                                     onValueChange = { password = it },
                                     label = "New Password",
-                                    isPassword = true
+                                    isPassword = true,
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 StyledTextField(
                                     value = confirmPassword,
                                     onValueChange = { confirmPassword = it },
                                     label = "Confirm Password",
-                                    isPassword = true
+                                    isPassword = true,
                                 )
                             }
                         }
@@ -522,7 +522,7 @@ fun AuthScreen(
                         }
                     }
 
-                    if (!isForgotPasswordMode || forgotPasswordStep != ForgotPasswordStep.NEW_PASSWORD) {
+                    if (!isForgotPasswordMode || (forgotPasswordStep != ForgotPasswordStep.NEW_PASSWORD)) {
                         Spacer(modifier = Modifier.height(24.dp))
 
                         TextButton(
@@ -572,7 +572,7 @@ fun AuthScreen(
                     imageVector = Icons.Filled.CheckCircle,
                     contentDescription = null,
                     tint = StatusLiveWin,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(48.dp),
                 )
             },
             title = {
@@ -580,7 +580,7 @@ fun AuthScreen(
                     "Password Changed",
                     color = Color.White,
                     fontFamily = Montserrat,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             },
             text = {
@@ -588,7 +588,7 @@ fun AuthScreen(
                     "Your password has been changed successfully. You can now login with your new password.",
                     color = TextSecondary,
                     fontFamily = OpenSans,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             },
             containerColor = SurfaceContainer,

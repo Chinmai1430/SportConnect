@@ -4,171 +4,144 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.postgrest.Postgrest
-import kotlinx.coroutines.flow.*
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
 @Serializable
-data class MatchRecord(
-    val id: String? = null,
+data class EventRecord(
     val title: String,
-    val description: String,
-    val viewers: String,
-    val is_live: Boolean = false,
-    val sport_type: String,
-    val image_url: String? = null,
+    @SerialName("is_live") val isLive: Boolean = false,
+    @SerialName("sport_type") val sportType: String,
+    @SerialName("image_url") val imageUrl: String? = null,
     val location: String? = null,
-    val date_label: String? = null
+    @SerialName("date_label") val dateLabel: String? = null,
 )
 
 @Serializable
-data class EventRecord(
-    val id: String? = null,
+data class MatchRecord(
+    val id: String,
     val title: String,
-    val sport_type: String,
-    val date_label: String,
-    val location: String? = null
+    val location: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
+    val viewers: Int = 0,
 )
 
 @Serializable
 data class FilmRecord(
-    val id: String? = null,
     val title: String,
-    val image_url: String
+    @SerialName("image_url") val imageUrl: String,
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
 ) : ViewModel() {
 
-    private val _activeMatch = MutableStateFlow<MatchRecord?>(null)
-    val activeMatch = _activeMatch.asStateFlow()
+    private val _selectedSport = MutableStateFlow("All Sports")
+    val selectedSport: StateFlow<String> = _selectedSport.asStateFlow()
 
     private val _events = MutableStateFlow<List<EventRecord>>(emptyList())
-    val events = _events.asStateFlow()
+    val events: StateFlow<List<EventRecord>> = _events.asStateFlow()
+
+    private val _activeMatch = MutableStateFlow<MatchRecord?>(null)
+    val activeMatch: StateFlow<MatchRecord?> = _activeMatch.asStateFlow()
 
     private val _nearbyMatches = MutableStateFlow<List<MatchRecord>>(emptyList())
-    val nearbyMatches = _nearbyMatches.asStateFlow()
+    val nearbyMatches: StateFlow<List<MatchRecord>> = _nearbyMatches.asStateFlow()
 
     private val _calendarMatches = MutableStateFlow<List<MatchRecord>>(emptyList())
-    val calendarMatches = _calendarMatches.asStateFlow()
+    val calendarMatches: StateFlow<List<MatchRecord>> = _calendarMatches.asStateFlow()
 
     private val _films = MutableStateFlow<List<FilmRecord>>(emptyList())
-    val films = _films.asStateFlow()
-
-    private val _selectedSport = MutableStateFlow("All Sports")
-    val selectedSport = _selectedSport.asStateFlow()
+    val films: StateFlow<List<FilmRecord>> = _films.asStateFlow()
 
     private val _selectedDate = MutableStateFlow("")
-    val selectedDate = _selectedDate.asStateFlow()
+    val selectedDate: StateFlow<String> = _selectedDate.asStateFlow()
 
     init {
         refreshAll()
     }
 
     fun refreshAll() {
+        fetchEvents("All Sports")
         fetchActiveMatch()
-        fetchEvents(_selectedSport.value)
         fetchNearbyMatches()
         fetchFilms()
     }
 
-    fun onDateSelected(date: String) {
-        _selectedDate.value = date
-        if (date.isNotEmpty()) {
-            fetchMatchesForDate(date)
-        } else {
-            _calendarMatches.value = emptyList()
-        }
-    }
-
-    private fun fetchMatchesForDate(date: String) {
-        viewModelScope.launch {
-            try {
-                val results = postgrest["matches"]
-                    .select {
-                        filter {
-                            eq("date_label", date)
-                        }
-                    }
-                    .decodeList<MatchRecord>()
-                _calendarMatches.value = results
-            } catch (e: Exception) {
-                _calendarMatches.value = emptyList()
-            }
-        }
-    }
-
-    fun fetchActiveMatch() {
-        viewModelScope.launch {
-            try {
-                val match = postgrest["matches"]
-                    .select {
-                        filter {
-                            eq("is_live", true)
-                        }
-                        limit(1)
-                    }
-                    .decodeSingleOrNull<MatchRecord>()
-                _activeMatch.value = match
-            } catch (e: Exception) {
-                _activeMatch.value = null
-            }
-        }
-    }
-
-    fun fetchNearbyMatches() {
-        viewModelScope.launch {
-            try {
-                val results = postgrest["matches"]
-                    .select {
-                        filter {
-                            eq("is_live", false)
-                        }
-                    }
-                    .decodeList<MatchRecord>()
-                _nearbyMatches.value = results
-            } catch (e: Exception) {
-                _nearbyMatches.value = emptyList()
-            }
-        }
-    }
-
-    fun fetchEvents(sport: String = "All Sports") {
+    fun fetchEvents(sport: String) {
         _selectedSport.value = sport
         viewModelScope.launch {
             try {
-                val results = if (sport == "All Sports") {
-                    postgrest["events"].select().decodeList<EventRecord>()
-                } else {
-                    postgrest["events"].select {
+                _events.value = postgrest["events"].select {
+                    if (sport != "All Sports") {
                         filter {
                             eq("sport_type", sport)
                         }
-                    }.decodeList<EventRecord>()
-                }
-                _events.value = results
-            } catch (e: Exception) {
-                _events.value = emptyList()
+                    }
+                }.decodeList<EventRecord>()
+            } catch (_: Exception) {
+                // Silently handle for now
             }
         }
     }
 
-    fun fetchFilms() {
+    private fun fetchActiveMatch() {
         viewModelScope.launch {
             try {
-                val results = postgrest["films"].select().decodeList<FilmRecord>()
-                _films.value = results
-            } catch (e: Exception) {
-                // Fallback for demo/schema safety
-                _films.value = listOf(
-                    FilmRecord(title = "The Last Dance", image_url = "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=400"),
-                    FilmRecord(title = "All or Nothing", image_url = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=400"),
-                    FilmRecord(title = "Formula 1", image_url = "https://images.unsplash.com/photo-1533130061792-64b345e4a833?q=80&w=400")
-                )
-            }
+                val match = postgrest["matches"]
+                    .select(columns = Columns.ALL) {
+                        filter {
+                            eq("is_live", value = true)
+                        }
+                    }
+                    .decodeSingleOrNull<MatchRecord>()
+                _activeMatch.value = match
+            } catch (_: Exception) { }
         }
+    }
+
+    private fun fetchNearbyMatches() {
+        viewModelScope.launch {
+            try {
+                _nearbyMatches.value = postgrest["matches"]
+                    .select()
+                    .decodeList<MatchRecord>()
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun onDateSelected(date: String) {
+        _selectedDate.value = date
+        if (date.isEmpty()) {
+            _calendarMatches.value = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            try {
+                _calendarMatches.value = postgrest["matches"]
+                    .select {
+                        filter {
+                            eq("match_date", date)
+                        }
+                    }
+                    .decodeList<MatchRecord>()
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun fetchFilms() {
+        // Sample static data for films as it might not be a DB table yet
+        _films.value = listOf(
+            FilmRecord(title = "The Last Dance", imageUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=400"),
+            FilmRecord(title = "Goal!", imageUrl = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=400"),
+            FilmRecord(title = "83", imageUrl = "https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=400"),
+        )
     }
 }

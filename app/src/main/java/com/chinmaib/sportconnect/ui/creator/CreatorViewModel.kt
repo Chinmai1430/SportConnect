@@ -1,3 +1,4 @@
+@file:Suppress("unused")
 package com.chinmaib.sportconnect.ui.creator
 
 import androidx.lifecycle.ViewModel
@@ -9,26 +10,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
 @Serializable
 data class NewEvent(
     val title: String,
-    val sport_type: String,
-    val team_name: String,
-    val date_label: String
+    @SerialName("sport_type") val sportType: String,
+    @SerialName("team_name") val teamName: String,
+    @SerialName("date_label") val dateLabel: String,
 )
 
 @HiltViewModel
 class CreatorViewModel @Inject constructor(
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
 ) : ViewModel() {
 
-    private val _isSubmitting = MutableStateFlow(false)
+    private val _isSubmitting = MutableStateFlow(value = false)
     val isSubmitting = _isSubmitting.asStateFlow()
 
-    private val _submitSuccess = MutableStateFlow(false)
+    private val _submitSuccess = MutableStateFlow(value = false)
     val submitSuccess = _submitSuccess.asStateFlow()
 
     private val _uiErrorState = MutableSharedFlow<String>()
@@ -41,9 +43,9 @@ class CreatorViewModel @Inject constructor(
                 // DIRECTIVE: Data Write with Supabase
                 val newEvent = NewEvent(
                     title = title,
-                    sport_type = sport,
-                    team_name = team,
-                    date_label = date
+                    sportType = sport,
+                    teamName = team,
+                    dateLabel = date,
                 )
                 postgrest["events"].insert(newEvent)
                 _submitSuccess.value = true

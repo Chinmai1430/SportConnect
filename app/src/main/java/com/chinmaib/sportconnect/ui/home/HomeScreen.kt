@@ -21,7 +21,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -58,7 +57,7 @@ fun HomeScreen(
             NavigationBar(
                 containerColor = SurfaceContainer.copy(alpha = 0.95f),
                 tonalElevation = 0.dp,
-                modifier = Modifier.clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                modifier = Modifier.clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
             ) {
                 tabs.forEachIndexed { index, title ->
                     val icon = when (title) {
@@ -76,8 +75,10 @@ fun HomeScreen(
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = AccentGold,
                             unselectedIconColor = TextMuted,
-                            indicatorColor = AppPrimaryBrand.copy(alpha = 0.1f),
-                        )
+                            selectedTextColor = AccentGold,
+                            unselectedTextColor = TextMuted,
+                            indicatorColor = Color.Transparent,
+                        ),
                     )
                 }
             }
@@ -88,20 +89,20 @@ fun HomeScreen(
                 containerColor = AccentGold,
                 contentColor = Color.Black,
                 shape = RoundedCornerShape(24.dp),
-                elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                elevation = FloatingActionButtonDefaults.elevation(8.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("CREATE", fontWeight = FontWeight.Bold)
             }
-        }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
                 .background(PrimaryBackground)
-                .systemBarsPadding() // DIRECTIVE: Safe Drawing Padding
+                .systemBarsPadding(), // DIRECTIVE: Safe Drawing Padding
         ) {
             when (selectedTab) {
                 2 -> DashboardContent(viewModel, onNavigateToRoster, onNavigateToMatches)
@@ -115,7 +116,7 @@ fun HomeScreen(
 fun DashboardContent(
     viewModel: HomeViewModel,
     onNavigateToRoster: () -> Unit,
-    onNavigateToMatches: () -> Unit
+    onNavigateToMatches: () -> Unit,
 ) {
     val selectedSport by viewModel.selectedSport.collectAsState()
     val events by viewModel.events.collectAsState()
@@ -130,7 +131,7 @@ fun DashboardContent(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // DIRECTIVE: Ad Placeholder at absolute top
         item {
@@ -138,7 +139,7 @@ fun DashboardContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 AdMobBannerPlaceholder()
             }
@@ -149,7 +150,7 @@ fun DashboardContent(
             ExpandableSportsCalendar(
                 selectedDate = selectedDate,
                 onDateSelected = { viewModel.onDateSelected(it) },
-                calendarMatches = calendarMatches
+                calendarMatches = calendarMatches,
             )
         }
 
@@ -160,7 +161,7 @@ fun DashboardContent(
         item {
             LazyRow(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(sportsList) { sport ->
                     val isSelected = selectedSport == sport
@@ -168,14 +169,14 @@ fun DashboardContent(
                         onClick = { viewModel.fetchEvents(sport) },
                         shape = RoundedCornerShape(12.dp),
                         color = if (isSelected) AppPrimaryBrand else SurfaceContainer,
-                        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, ElevatedBorders)
+                        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, ElevatedBorders),
                     ) {
                         Text(
                             text = sport,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                             color = if (isSelected) Color.White else TextPrimary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
                         )
                     }
                 }
@@ -209,12 +210,12 @@ fun DashboardContent(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     items(nearbyMatches.take(4)) { match ->
                         MatchCard(
                             match = MatchData(match.title, match.location ?: "Unknown"),
-                            modifier = Modifier.width(200.dp)
+                            modifier = Modifier.width(200.dp),
                         )
                     }
                 }
@@ -234,30 +235,33 @@ fun DashboardContent(
 fun ExpandableSportsCalendar(
     selectedDate: String,
     onDateSelected: (String) -> Unit,
-    calendarMatches: List<MatchRecord>
+    calendarMatches: List<MatchRecord>,
 ) {
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val daySdf = SimpleDateFormat("EEE", Locale.getDefault())
-    val dateSdf = SimpleDateFormat("dd", Locale.getDefault())
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val sdf = remember(locale) { SimpleDateFormat("dd/MM/yyyy", locale) }
+    val daySdf = remember(locale) { SimpleDateFormat("EEE", locale) }
+    val dateSdf = remember(locale) { SimpleDateFormat("dd", locale) }
     
-    val calendar = Calendar.getInstance()
-    val dates = (0..14).map {
-        val d = calendar.time
-        val formatted = sdf.format(d)
-        val day = daySdf.format(d).uppercase()
-        val dateNum = dateSdf.format(d)
-        calendar.add(Calendar.DAY_OF_YEAR, 1)
-        Triple(formatted, day, dateNum)
+    val calendar = Calendar.getInstance(locale)
+    val dates = remember(locale) {
+        (0..14).map {
+            val d = calendar.time
+            val formatted = sdf.format(d)
+            val day = daySdf.format(d).uppercase()
+            val dateNum = dateSdf.format(d)
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            Triple(formatted, day, dateNum)
+        }
     }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .animateContentSize()
+            .animateContentSize(),
     ) {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(dates) { (formatted, day, dateNum) ->
                 val isSelected = selectedDate == formatted
@@ -270,13 +274,13 @@ fun ExpandableSportsCalendar(
                             if (isSelected) onDateSelected("") else onDateSelected(formatted) 
                         }
                         .padding(vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = day,
                         color = if (isSelected) Color.White else TextSecondary,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Text(
                         text = dateNum,
@@ -381,7 +385,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = activeMatch?.image_url ?: "https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1000",
+                model = activeMatch?.imageUrl ?: "https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1000",
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -483,7 +487,7 @@ fun MatchCard(match: MatchData, modifier: Modifier = Modifier) {
         ) {
             Box(
                 modifier = Modifier.size(40.dp).background(AppPrimaryBrand.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Sports, contentDescription = null, tint = AppPrimaryBrand)
             }
@@ -507,7 +511,7 @@ fun EventCard(event: EventRecord) {
             modifier = Modifier.padding(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val icon = when (event.sport_type) {
+            val icon = when (event.sportType) {
                 "Cricket" -> Icons.Default.SportsCricket
                 "Football" -> Icons.Default.SportsFootball
                 "Basketball" -> Icons.Default.SportsBasketball
@@ -516,7 +520,7 @@ fun EventCard(event: EventRecord) {
             
             Box(
                 modifier = Modifier.size(48.dp).background(AppPrimaryBrand.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(icon, contentDescription = null, tint = AppPrimaryBrand, modifier = Modifier.size(24.dp))
             }
@@ -535,7 +539,7 @@ fun EventCard(event: EventRecord) {
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = event.date_label,
+                    text = event.dateLabel ?: "",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     color = AccentGold,
                     fontWeight = FontWeight.Bold,
@@ -555,7 +559,7 @@ fun SportsFilmsGrid(films: List<FilmRecord>) {
         items(films) { film ->
             Column(modifier = Modifier.width(140.dp)) {
                 AsyncImage(
-                    model = film.image_url,
+                    model = film.imageUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .height(200.dp)
@@ -604,14 +608,15 @@ fun SectionHeader(title: String, onViewAll: () -> Unit) {
 
 @Composable
 fun FlashingDot() {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "flashing_dot")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.3f,
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "alpha"
     )
     Canvas(modifier = Modifier.size(8.dp).alpha(alpha)) {
         drawCircle(color = Color.White)

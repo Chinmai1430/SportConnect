@@ -52,17 +52,16 @@ fun ProfileInfoStep(
     onDobSelected: (String) -> Unit,
     phoneNumber: String,
     onPhoneChanged: (String) -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
 ) {
-    val showDatePicker = remember { mutableStateOf(false) }
+    val showDatePicker = remember { mutableStateOf(value = false) }
     val datePickerState = rememberDatePickerState()
     val adjustProfileTitle = stringResource(R.string.adjust_profile_title)
 
     // Automatic Country Code Detection
     LaunchedEffect(Unit) {
         if (phoneNumber.isEmpty()) {
-            val countryCode = Locale.getDefault().country
-            val dialCode = when (countryCode) {
+            val dialCode = when (Locale.getDefault().country) {
                 "IN" -> "+91 "
                 "US" -> "+1 "
                 "GB" -> "+44 "
@@ -93,8 +92,8 @@ fun ProfileInfoStep(
                     activityTitle = adjustProfileTitle,
                     activityMenuIconColor = android.graphics.Color.WHITE,
                     cropMenuCropButtonTitle = "SAVE",
-                    backgroundColor = "#0F172A".toColorInt()
-                )
+                    backgroundColor = "#0F172A".toColorInt(),
+                ),
             )
             cropImageLauncher.launch(cropOptions)
         }
@@ -116,7 +115,7 @@ fun ProfileInfoStep(
             fontFamily = Montserrat,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
@@ -126,7 +125,7 @@ fun ProfileInfoStep(
             fontFamily = Montserrat,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 2.sp,
-            modifier = Modifier.padding(top = 8.dp, bottom = 40.dp)
+            modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
         )
 
         Box(
@@ -138,7 +137,7 @@ fun ProfileInfoStep(
                 .clickable {
                     photoPickerLauncher.launch(
                         PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                            ActivityResultContracts.PickVisualMedia.ImageOnly,
                         )
                     )
                 },
@@ -147,14 +146,14 @@ fun ProfileInfoStep(
             if (selectedImageUri == null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(R.string.add_photo_desc), tint = TextSecondary, modifier = Modifier.size(40.dp))
-                    Text(text = stringResource(R.string.upload), color = TextSecondary, fontFamily = Montserrat, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Text(text = stringResource(R.string.upload), color = TextSecondary, fontFamily = Montserrat, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp),)
                 }
             } else {
                 AsyncImage(
                     model = selectedImageUri,
                     contentDescription = stringResource(R.string.profile_photo_desc),
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
@@ -173,7 +172,7 @@ fun ProfileInfoStep(
                 value = userName,
                 onValueChange = onNameChanged,
                 label = "Full Name",
-                placeholder = "Enter your full name"
+                placeholder = "Enter your full name",
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -189,7 +188,7 @@ fun ProfileInfoStep(
                     Icon(
                         imageVector = Icons.Filled.CalendarMonth,
                         contentDescription = stringResource(R.string.select_date_desc),
-                        tint = if (selectedDob.isEmpty()) TextMuted else AppPrimaryBrand
+                        tint = if (selectedDob.isEmpty()) TextMuted else AppPrimaryBrand,
                     )
                 }
             )
@@ -202,7 +201,7 @@ fun ProfileInfoStep(
                 label = "Phone Number",
                 placeholder = "e.g. +91 9876543210",
                 isNumber = true,
-                trailingIcon = { Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone", tint = TextMuted) }
+                trailingIcon = { Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone", tint = TextMuted) },
             )
         }
 
@@ -210,7 +209,7 @@ fun ProfileInfoStep(
 
         Button(
             onClick = onNext,
-            enabled = userName.isNotBlank() && selectedDob.isNotBlank() && phoneNumber.length >= 8,
+            enabled = (userName.isNotBlank() && selectedDob.isNotBlank() && (phoneNumber.length >= 8)),
             modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = Color.Black),
             shape = RoundedCornerShape(18.dp),
@@ -225,16 +224,18 @@ fun ProfileInfoStep(
         DatePickerDialog(
             onDismissRequest = { showDatePicker.value = false },
             confirmButton = {
-                TextButton(onClick = {
-                    showDatePicker.value = false
-                    val utcTimeMillis = datePickerState.selectedDateMillis
-                    if (utcTimeMillis != null) {
-                        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).apply {
-                            timeZone = TimeZone.getTimeZone("UTC")
+                TextButton(
+                    onClick = {
+                        showDatePicker.value = false
+                        val utcTimeMillis = datePickerState.selectedDateMillis
+                        if (utcTimeMillis != null) {
+                            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }
+                            onDobSelected(formatter.format(Date(utcTimeMillis)))
                         }
-                        onDobSelected(formatter.format(Date(utcTimeMillis)))
-                    }
-                }) {
+                    },
+                ) {
                     Text(text = stringResource(R.string.confirm), color = AppPrimaryBrand, fontFamily = Montserrat, fontWeight = FontWeight.Bold)
                 }
             },

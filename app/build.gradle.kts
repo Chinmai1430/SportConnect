@@ -67,15 +67,6 @@ kotlin {
     }
 }
 
-// Forces Hilt to use the newer metadata library to support Kotlin 2.4.0
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.jetbrains.kotlinx" && requested.name == "kotlinx-metadata-jvm") {
-            useVersion("0.9.0")
-        }
-    }
-}
-
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     // Core Android & Compose

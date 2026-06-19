@@ -20,10 +20,5 @@ val StatusLiveWin = Color(0xFF10B981)
 val StatusLossError = Color(0xFFEF4444)
 val StatusInfo = Color(0xFF3B82F6)
 
-// Compatibility aliases for existing components if any
-val SleekBlue = AppPrimaryBrand
-val GoldAction = AccentGold
-val SurfaceCards = SurfaceContainer
+// Compatibility aliases for existing components
 val GoldPrimary = AccentGold
-val GoldLight = Color(0xFFF0BF2C)
-val GoldDark = Color(0xFF7A5C00)
