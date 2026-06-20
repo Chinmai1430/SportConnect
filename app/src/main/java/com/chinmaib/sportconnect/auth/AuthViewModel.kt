@@ -31,6 +31,7 @@ sealed class AuthState {
     data object OtpVerified : AuthState()
     data object ResetOtpSent : AuthState()
     data object ResetOtpVerified : AuthState()
+    data object SignedOut : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -66,7 +67,6 @@ class AuthViewModel @Inject constructor(
 
     private val redirectUrl = "sportconnect://login-callback"
     
-    // SECURITY: Email Regex Pattern (Simplified and Corrected)
     private val emailPattern = Pattern.compile(
         "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$",
     )
@@ -81,9 +81,13 @@ class AuthViewModel @Inject constructor(
     }
 
     init {
+        // Initial state check
         val user = auth.currentUserOrNull()
         if (user != null) {
             checkProfileStatus()
+        } else {
+            // PRODUCTION: Proactively ensure Idle state if no user
+            _authState.value = AuthState.Idle
         }
         observeSession()
     }
@@ -92,7 +96,13 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             auth.sessionStatus.collect { status ->
                 if (status is io.github.jan.supabase.auth.status.SessionStatus.Authenticated) {
-                    checkProfileStatus()
+                    if (_authState.value !is AuthState.Authenticated) {
+                        checkProfileStatus()
+                    }
+                } else if (status is io.github.jan.supabase.auth.status.SessionStatus.NotAuthenticated) {
+                    if (_authState.value !is AuthState.SignedOut) {
+                        _authState.value = AuthState.Idle
+                    }
                 }
             }
         }
@@ -106,7 +116,10 @@ class AuthViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
+            if (_authState.value !is AuthState.Loading) {
+                _authState.value = AuthState.Loading
+            }
+            
             try {
                 val response = postgrest["profiles"]
                     .select(columns = Columns.list("onboarding_completed")) {
@@ -123,7 +136,6 @@ class AuthViewModel @Inject constructor(
                     _authState.value = AuthState.OnboardingRequired
                 }
             } catch (_: Exception) {
-                // FALLBACK: If profile doesn't exist yet, it's a new user requiring onboarding
                 _authState.value = AuthState.OnboardingRequired
             }
         }
@@ -317,11 +329,9 @@ class AuthViewModel @Inject constructor(
             try {
                 var avatarUrl: String? = null
 
-                // 1. Upload image if available
                 imageUri?.let { uri ->
                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     if (bytes != null) {
-                        // PRODUCTION: Unique filename preventing collisions
                         val fileName = "${user.id}/avatar_${System.currentTimeMillis()}.jpg"
                         storage["avatars"].upload(fileName, bytes) {
                             upsert = true
@@ -330,7 +340,6 @@ class AuthViewModel @Inject constructor(
                     }
                 }
 
-                // 2. Update profile in database
                 val profileUpdate = ProfileUpdate(
                     id = user.id,
                     fullName = sanitizedName,
@@ -353,9 +362,22 @@ class AuthViewModel @Inject constructor(
         if ((_authState.value is AuthState.Error) || 
             (_authState.value is AuthState.OtpSent) || 
             (_authState.value is AuthState.Success) ||
-            (_authState.value is AuthState.ResetOtpSent)
+            (_authState.value is AuthState.ResetOtpSent) ||
+            (_authState.value is AuthState.SignedOut)
         ) {
             _authState.value = AuthState.Idle
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                _authState.value = AuthState.Loading
+                auth.signOut()
+                _authState.value = AuthState.SignedOut
+            } catch (_: Exception) {
+                _authState.value = AuthState.SignedOut
+            }
         }
     }
 }

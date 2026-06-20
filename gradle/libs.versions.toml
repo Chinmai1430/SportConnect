@@ -9,7 +9,6 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
 composeBom = "2026.06.00"
-kotlinxMetadata = "0.9.0"
 
 # Secure Communication Module - Audit-Hardened Pins
 libsignal = "0.86.5"
@@ -74,7 +73,6 @@ ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.r
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 logback-android = { group = "com.github.tony19", name = "logback-android", version.ref = "logback" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging-android", version.ref = "kotlinLogging" }
-kotlinx-metadata-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-metadata-jvm", version.ref = "kotlinxMetadata" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

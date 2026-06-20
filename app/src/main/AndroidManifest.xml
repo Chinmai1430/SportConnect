@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -21,7 +20,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.SportConnect">
+            android:theme="@style/Theme.App.Starting">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,12 +34,6 @@
                 <data android:scheme="sportconnect" android:host="login-callback" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name="com.canhub.cropper.CropImageActivity"
-            android:theme="@style/Theme.Cropper"
-            android:exported="true"
-            tools:ignore="DeprecatedClass" />
 
     </application>
 

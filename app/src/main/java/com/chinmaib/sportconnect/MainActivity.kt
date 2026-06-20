@@ -3,25 +3,31 @@ package com.chinmaib.sportconnect
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import com.chinmaib.sportconnect.auth.AuthScreen
+import com.chinmaib.sportconnect.auth.AuthState
 import com.chinmaib.sportconnect.auth.AuthViewModel
 import com.chinmaib.sportconnect.auth.ProfileSetupScreen
 import com.chinmaib.sportconnect.auth.SplashScreen
@@ -30,19 +36,18 @@ import com.chinmaib.sportconnect.ui.home.HomeScreen
 import com.chinmaib.sportconnect.ui.home.HomeViewModel
 import com.chinmaib.sportconnect.ui.home.MatchesListScreen
 import com.chinmaib.sportconnect.ui.home.RosterListScreen
-import com.chinmaib.sportconnect.ui.theme.SportConnectTheme
+import com.chinmaib.sportconnect.ui.profile.ProfileScreen
+import com.chinmaib.sportconnect.ui.theme.*
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.handleDeeplinks
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-
-// SUPABASE CONFIGURATION INSTRUCTION:
-// Update your Supabase Web Dashboard -> Authentication -> URL Configuration
-// Set both "Site URL" and "Redirect URLs" to: sportconnect://login-callback
+import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -52,10 +57,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        enableEdgeToEdge() // DIRECTIVE: Edge-to-Edge
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        
-        // SECURITY: Validate Deep Link Intent
         handleDeepLink(intent)
 
         setContent {
@@ -78,7 +81,6 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLink(intent: Intent?) {
         intent?.let {
             val data = it.data
-            // SECURITY: Only handle links that match our specific scheme to prevent intent hijacking
             if ((data?.scheme == "sportconnect") && (data.host == "login-callback")) {
                 supabaseClient.handleDeeplinks(it)
             }
@@ -89,100 +91,203 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SportConnectNavigation() {
     val navController = rememberNavController()
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val authState by authViewModel.authState.collectAsState()
+    
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var showToast by remember { mutableStateOf(value = false) }
 
-    NavHost(navController = navController, startDestination = "splash") {
+    fun triggerToast(message: String) {
+        toastMessage = message
+        showToast = true
+    }
 
-        composable("splash") {
-            SplashScreen {
-                navController.navigate("auth") {
-                    popUpTo("splash") { inclusive = true }
-                }
-            }
+    LaunchedEffect(showToast) {
+        if (showToast) {
+            delay(2.seconds)
+            showToast = false
         }
+    }
 
-        composable("auth") {
-            AuthScreen { isLoginMode, userName ->
-                if (isLoginMode) {
-                    navController.navigate("home") {
-                        popUpTo("auth") { inclusive = true }
+    // ACCURACY GUARD: Force resolution check for cold starts
+    var isAuthResolved by remember { mutableStateOf(value = false) }
+    
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated, 
+            is AuthState.OnboardingRequired, 
+            is AuthState.Idle -> {
+                // If Idle, double check if it's truly anonymous
+                if (authState is AuthState.Idle) {
+                    if (authViewModel.auth.currentUserOrNull() == null) {
+                        isAuthResolved = true
                     }
                 } else {
-                    // SECURITY: Strictly sanitize and encode name for URL transit
-                    val sanitized = userName.trim().take(50).replace(Regex("[^a-zA-Z\\s]"), "")
-                    val safeName = if (sanitized.isNotBlank()) URLEncoder.encode(sanitized, StandardCharsets.UTF_8.toString()) else "Athlete"
-                    navController.navigate("profile_setup/$safeName")
+                    isAuthResolved = true
                 }
             }
+            is AuthState.Error -> {
+                isAuthResolved = true
+            }
+            else -> {} // Keep waiting for Loading/Reset
         }
+    }
 
-        composable("profile_setup/{userName}") { backStackEntry ->
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
-            // SECURITY: Decode with explicit charset
-            val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
-            val context = androidx.compose.ui.platform.LocalContext.current
-            val authState by authViewModel.authState.collectAsState()
+    val startRoute = "splash"
 
-            Box {
-                ProfileSetupScreen(userName = userName) { imageUri, fullName, dob, phone, _, _, _ ->
-                    authViewModel.saveProfile(imageUri, fullName, dob, phone, context)
-                }
-
-                if (authState is com.chinmaib.sportconnect.auth.AuthState.Loading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        androidx.compose.material3.CircularProgressIndicator(color = com.chinmaib.sportconnect.ui.theme.AccentGold)
-                    }
-                }
-            }
-
-            LaunchedEffect(authState) {
-                when (authState) {
-                    is com.chinmaib.sportconnect.auth.AuthState.Authenticated -> {
-                        navController.navigate("home") {
-                            popUpTo("auth") { inclusive = true }
-                            popUpTo("profile_setup/{userName}") { inclusive = true }
+    Box(modifier = Modifier.fillMaxSize()) {
+        // PRODUCTION GUARD: Entire NavHost is deferred until session is verified
+        if (isAuthResolved) {
+            NavHost(navController = navController, startDestination = startRoute) {
+                composable("splash") {
+                    SplashScreen {
+                        val target = when (authState) {
+                            is AuthState.Authenticated -> "home"
+                            is AuthState.OnboardingRequired -> "profile_setup/Athlete"
+                            else -> "auth"
+                        }
+                        navController.navigate(target) {
+                            popUpTo("splash") { inclusive = true }
                         }
                     }
-                    is com.chinmaib.sportconnect.auth.AuthState.Error -> {
-                        // PRODUCTION: Toast is fine for simple errors, but localized
-                        android.widget.Toast.makeText(context, (authState as com.chinmaib.sportconnect.auth.AuthState.Error).message, android.widget.Toast.LENGTH_LONG).show()
-                        authViewModel.resetState()
+                }
+
+                composable("auth") {
+                    LaunchedEffect(Unit) {
+                        if (authState is AuthState.SignedOut) {
+                            triggerToast("✅ Logged out successfully!")
+                            authViewModel.resetState()
+                        }
                     }
-                    else -> {}
+
+                    AuthScreen(viewModel = authViewModel) { isLoginMode, userName ->
+                        if (isLoginMode) {
+                            navController.navigate("home") {
+                                popUpTo("auth") { inclusive = true }
+                            }
+                        } else {
+                            val sanitized = userName.trim().take(50).replace(Regex("[^a-zA-Z\\s]"), "")
+                            val safeName = if (sanitized.isNotBlank()) URLEncoder.encode(sanitized, StandardCharsets.UTF_8.toString()) else "Athlete"
+                            navController.navigate("profile_setup/$safeName")
+                        }
+                    }
+                }
+
+                composable("profile_setup/{userName}") { backStackEntry ->
+                    val encodedName = backStackEntry.arguments?.getString("userName") ?: "New Athlete"
+                    val userName = URLDecoder.decode(encodedName, StandardCharsets.UTF_8.toString())
+                    val context = LocalContext.current
+
+                    Box {
+                        ProfileSetupScreen(userName = userName) { imageUri, fullName, dob, phone, _, _, _ ->
+                            authViewModel.saveProfile(imageUri, fullName, dob, phone, context)
+                        }
+
+                        if (authState is AuthState.Loading) {
+                            Box(
+                                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                androidx.compose.material3.CircularProgressIndicator(color = AccentGold)
+                            }
+                        }
+                    }
+
+                    LaunchedEffect(authState) {
+                        when (authState) {
+                            is AuthState.Authenticated -> {
+                                navController.navigate("home") {
+                                    popUpTo("auth") { inclusive = true }
+                                    popUpTo("profile_setup/{userName}") { inclusive = true }
+                                }
+                            }
+                            is AuthState.Error -> {
+                                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
+                                authViewModel.resetState()
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+
+                composable("home") {
+                    LaunchedEffect(Unit) {
+                        if (authState is AuthState.Authenticated) {
+                            triggerToast("✅ Logged in successfully!")
+                        }
+                    }
+
+                    val homeViewModel: HomeViewModel = hiltViewModel()
+                    HomeScreen(
+                        viewModel = homeViewModel,
+                        onNavigateToCreator = { navController.navigate("sports_creator") },
+                        onNavigateToRoster = { navController.navigate("roster_list") },
+                        onNavigateToMatches = { navController.navigate("matches_list") },
+                    ) { navController.navigate("profile") }
+                }
+
+                composable("profile") {
+                    ProfileScreen(
+                        onBack = { navController.popBackStack() },
+                        onLogout = {
+                            authViewModel.logout()
+                            navController.navigate("auth") {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
+                composable("roster_list") {
+                    val homeViewModel: HomeViewModel = hiltViewModel()
+                    RosterListScreen(viewModel = homeViewModel) {
+                        navController.popBackStack()
+                    }
+                }
+
+                composable("matches_list") {
+                    MatchesListScreen {
+                        navController.popBackStack()
+                    }
+                }
+
+                composable("sports_creator") {
+                    SportsCreatorScreen {
+                        navController.popBackStack()
+                    }
                 }
             }
         }
 
-        composable("home") {
-            val homeViewModel: HomeViewModel = hiltViewModel()
-            HomeScreen(
-                viewModel = homeViewModel,
-                onNavigateToCreator = { navController.navigate("sports_creator") },
-                onNavigateToRoster = { navController.navigate("roster_list") },
+        // PREMIUM TOP-RIGHT TOASTER Overlay
+        AnimatedVisibility(
+            visible = showToast,
+            enter = slideInHorizontally { it } + fadeIn(),
+            exit = slideOutHorizontally { it } + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 64.dp, end = 16.dp)
+                .statusBarsPadding(),
+        ) {
+            Surface(
+                color = SurfaceContainer,
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, ElevatedBorders),
+                shadowElevation = 8.dp,
             ) {
-                navController.navigate("matches_list")
-            }
-        }
-
-        composable("roster_list") {
-            val homeViewModel: HomeViewModel = hiltViewModel()
-            RosterListScreen(viewModel = homeViewModel) {
-                navController.popBackStack()
-            }
-        }
-
-        composable("matches_list") {
-            MatchesListScreen {
-                navController.popBackStack()
-            }
-        }
-
-        composable("sports_creator") {
-            SportsCreatorScreen {
-                navController.popBackStack()
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = toastMessage ?: "",
+                        color = Color.White,
+                        fontFamily = Montserrat,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                    )
+                }
             }
         }
     }

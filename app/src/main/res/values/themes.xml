@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.SportConnect" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">#0F172A</item>
+        <item name="android:statusBarColor">#0F172A</item>
+        <item name="android:navigationBarColor">#0F172A</item>
     </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#061710</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/pitchup_logo</item>
+        <!-- BACKGROUND: Unified Navy to prevent white flicker -->
+        <item name="windowSplashScreenBackground">#0F172A</item>
+        <!-- ICON: Transparent to avoid the "static-to-animated" snap glitch -->
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <!-- THEME: Transition to main app theme -->
         <item name="postSplashScreenTheme">@style/Theme.SportConnect</item>
     </style>
 
     <style name="Theme.Cropper" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">#061710</item>
-        <item name="colorPrimaryDark">#061710</item>
-        <item name="colorAccent">#F4A261</item>
+        <item name="colorPrimary">#0F172A</item>
+        <item name="colorPrimaryDark">#0F172A</item>
+        <item name="colorAccent">#C9980A</item>
         <item name="actionMenuTextColor">#FFFFFF</item>
         <item name="android:actionMenuTextColor">#FFFFFF</item>
     </style>

@@ -65,7 +65,7 @@ class HomeViewModel @Inject constructor(
     val selectedDate: StateFlow<String> = _selectedDate.asStateFlow()
 
     init {
-        refreshAll()
+        // refreshAll() - Rely on HomeScreen to trigger this once to avoid double fetch
     }
 
     fun refreshAll() {
