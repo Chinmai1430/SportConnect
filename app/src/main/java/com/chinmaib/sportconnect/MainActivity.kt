@@ -38,6 +38,8 @@ import com.chinmaib.sportconnect.ui.home.MatchesListScreen
 import com.chinmaib.sportconnect.ui.home.RosterListScreen
 import com.chinmaib.sportconnect.ui.profile.ProfileScreen
 import com.chinmaib.sportconnect.ui.theme.*
+import com.chinmaib.sportconnect.ui.films.MovieDetailScreen
+import com.chinmaib.sportconnect.ui.films.SportsFilmCatalogueScreen
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.handleDeeplinks
 import dagger.hilt.android.AndroidEntryPoint
@@ -210,20 +212,46 @@ fun SportConnectNavigation() {
                     }
                 }
 
-                composable("home") {
-                    LaunchedEffect(Unit) {
-                        if (authState is AuthState.Authenticated) {
-                            triggerToast("✅ Logged in successfully!")
-                        }
-                    }
-
+                composable(route = "home") {
                     val homeViewModel: HomeViewModel = hiltViewModel()
+
                     HomeScreen(
                         viewModel = homeViewModel,
                         onNavigateToCreator = { navController.navigate("sports_creator") },
                         onNavigateToRoster = { navController.navigate("roster_list") },
                         onNavigateToMatches = { navController.navigate("matches_list") },
-                    ) { navController.navigate("profile") }
+                        onNavigateToProfile = { navController.navigate("profile") },
+                        onNavigateToFilms = { navController.navigate("film_catalogue") },
+                        onNavigateToFilmDetail = { film ->
+                            navController.navigate("film_detail/${URLEncoder.encode(film.title, StandardCharsets.UTF_8.toString())}")
+                        }
+                    )
+                }
+
+                composable("film_catalogue") {
+                    val homeViewModel: HomeViewModel = hiltViewModel()
+                    SportsFilmCatalogueScreen(
+                        viewModel = homeViewModel,
+                        onBack = { navController.popBackStack() },
+                        onFilmClick = { film ->
+                            navController.navigate("film_detail/${URLEncoder.encode(film.title, StandardCharsets.UTF_8.toString())}")
+                        }
+                    )
+                }
+
+                composable("film_detail/{filmTitle}") { backStackEntry ->
+                    val filmTitle = backStackEntry.arguments?.getString("filmTitle") ?: ""
+                    val homeViewModel: HomeViewModel = hiltViewModel()
+                    val films by homeViewModel.films.collectAsState()
+                    val decodedTitle = URLDecoder.decode(filmTitle, StandardCharsets.UTF_8.toString())
+                    val film = films.find { it.title == decodedTitle }
+                    
+                    film?.let {
+                        MovieDetailScreen(
+                            film = it,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
                 }
 
                 composable("profile") {
@@ -253,7 +281,8 @@ fun SportConnectNavigation() {
                 }
 
                 composable("sports_creator") {
-                    SportsCreatorScreen {
+                    val homeViewModel: HomeViewModel = hiltViewModel()
+                    SportsCreatorScreen(viewModel = homeViewModel) {
                         navController.popBackStack()
                     }
                 }

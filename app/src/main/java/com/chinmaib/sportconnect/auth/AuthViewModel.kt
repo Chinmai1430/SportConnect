@@ -12,8 +12,11 @@ import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.storage.Storage
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
@@ -64,6 +67,9 @@ class AuthViewModel @Inject constructor(
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    private val _oneTimeEvents = MutableSharedFlow<String>()
+    val oneTimeEvents: SharedFlow<String> = _oneTimeEvents.asSharedFlow()
 
     private val redirectUrl = "sportconnect://login-callback"
     
@@ -204,6 +210,7 @@ class AuthViewModel @Inject constructor(
                 auth.updateUser {
                     password = sanitizedPassword
                 }
+                _oneTimeEvents.emit("Registration Successful")
                 _authState.value = AuthState.Success
             } catch (_: Exception) {
                 _authState.value = AuthState.Error("Account Update Failed: Check connection.")
@@ -228,6 +235,7 @@ class AuthViewModel @Inject constructor(
                     email = sanitizedEmail
                     password = sanitizedPassword
                 }
+                _oneTimeEvents.emit("Login Successful")
                 checkProfileStatus()
             } catch (_: Exception) {
                 _authState.value = AuthState.Error("Access Denied: Invalid credentials.")
@@ -241,6 +249,7 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Loading
             try {
                 auth.signInWith(Google, redirectUrl = redirectUrl)
+                _oneTimeEvents.emit("Login Successful")
             } catch (_: Exception) {
                 _authState.value = AuthState.Error("Auth Provider Error: Google Sign-In failed.")
             }
@@ -350,7 +359,7 @@ class AuthViewModel @Inject constructor(
                 )
 
                 postgrest["profiles"].upsert(profileUpdate)
-
+                _oneTimeEvents.emit("Profile Saved")
                 _authState.value = AuthState.Authenticated
             } catch (_: Exception) {
                 _authState.value = AuthState.Error("DB Error: Profile persistence failed.")

@@ -117,6 +117,9 @@ dependencies {
     // Coil Image Rendering Engine
     implementation(libs.coil.compose)
 
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+
     // Logging Implementation
     implementation(libs.logback.android)
     implementation(libs.kotlin.logging)

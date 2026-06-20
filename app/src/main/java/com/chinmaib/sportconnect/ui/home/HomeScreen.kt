@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -30,11 +31,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.chinmaib.sportconnect.ui.theme.*
+import com.chinmaib.sportconnect.auth.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.runtime.Immutable
@@ -52,13 +59,46 @@ data class MatchData(val format: String, val location: String)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
     onNavigateToCreator: () -> Unit,
     onNavigateToRoster: () -> Unit,
     onNavigateToMatches: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToFilms: () -> Unit,
+    onNavigateToFilmDetail: (FilmRecord) -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(2) } 
     val tabs = remember { listOf("EXPLORE", "STATS", "HOME", "SQUAD", "PROFILE") }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    val hasSeenTutorialFlow = remember {
+        context.dataStore.data.map { it[OnboardingPrefs.HAS_SEEN_NAV_TUTORIAL] ?: false }
+    }
+    val hasSeenTutorial by hasSeenTutorialFlow.collectAsState(initial = true)
+    var showTutorial by remember { mutableStateOf(false) }
+    var currentTutorialStep by remember { mutableIntStateOf(0) }
+    
+    var showSuccessNotification by remember { mutableStateOf(false) }
+
+    LaunchedEffect(hasSeenTutorial) {
+        if (!hasSeenTutorial) {
+            showTutorial = true
+        }
+    }
+    
+    // DIRECTIVE: One-Time Login Success Message
+    LaunchedEffect(Unit) {
+        authViewModel.oneTimeEvents.collectLatest { message ->
+            if (message == "Login Successful" || message == "Registration Successful") {
+                showSuccessNotification = true
+                kotlinx.coroutines.delay(3000L)
+                showSuccessNotification = false
+            }
+        }
+    }
 
     // PERFORMANCE: Bottom Bar Animation State
     val bottomBarHeight = 80.dp
@@ -82,6 +122,7 @@ fun HomeScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -90,21 +131,27 @@ fun HomeScreen(
                 HomeNavigationBar(
                     tabs = tabs,
                     selectedTab = selectedTab,
+                    isTutorialActive = showTutorial,
+                    onboardingStep = currentTutorialStep
                 ) { index ->
-                    if (tabs[index] == "PROFILE") {
-                        onNavigateToProfile()
-                    } else {
-                        selectedTab = index
+                    if (!showTutorial) {
+                        if (tabs[index] == "PROFILE") {
+                            onNavigateToProfile()
+                        } else {
+                            selectedTab = index
+                        }
                     }
                 }
             }
         },
         floatingActionButton = {
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(x = 0, y = -bottomBarOffsetHeightPx.floatValue.roundToInt()) }
-            ) {
-                HomeFAB(onClick = onNavigateToCreator)
+            if (!showTutorial) {
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(x = 0, y = -bottomBarOffsetHeightPx.floatValue.roundToInt()) }
+                ) {
+                    HomeFAB(onClick = onNavigateToCreator)
+                }
             }
         },
         containerColor = PrimaryBackground 
@@ -113,12 +160,84 @@ fun HomeScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .systemBarsPadding()
         ) {
             when (selectedTab) {
-                2 -> DashboardContent(viewModel, onNavigateToRoster, onNavigateToMatches)
+                2 -> DashboardContent(
+                    viewModel = viewModel, 
+                    onNavigateToRoster = onNavigateToRoster, 
+                    onNavigateToMatches = onNavigateToMatches,
+                    onNavigateToFilms = onNavigateToFilms,
+                    onNavigateToFilmDetail = onNavigateToFilmDetail,
+                )
                 else -> WIPScreen(tabs[selectedTab])
             }
+
+            if (showTutorial) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .clickable(enabled = false) {} // Absorb clicks
+                )
+            }
+            
+            AnimatedVisibility(
+                visible = showSuccessNotification,
+                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .zIndex(150f)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF1E293B),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF078BDC)),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier
+                        .padding(top = 48.dp)
+                        .padding(horizontal = 24.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = StatusLiveWin,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Login Successful",
+                            color = TextPrimary,
+                            fontFamily = Montserrat,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
+        if (showTutorial) {
+            TooltipOverlay(
+                currentStep = currentTutorialStep,
+                innerPadding = paddingValues,
+                onNext = {
+                    if (currentTutorialStep < 4) {
+                        currentTutorialStep++
+                    } else {
+                        scope.launch {
+                            context.dataStore.edit { settings ->
+                                settings[OnboardingPrefs.HAS_SEEN_NAV_TUTORIAL] = true
+                            }
+                            showTutorial = false
+                        }
+                    }
+                }
+            )
         }
     }
 }
@@ -127,6 +246,8 @@ fun HomeScreen(
 fun HomeNavigationBar(
     tabs: List<String>,
     selectedTab: Int,
+    isTutorialActive: Boolean = false,
+    onboardingStep: Int = 0,
     onTabSelected: (Int) -> Unit,
 ) {
     NavigationBar(
@@ -145,15 +266,37 @@ fun HomeNavigationBar(
                     else -> Icons.Default.Home
                 }
             }
+
+            val iconColor = if (isTutorialActive) {
+                if (index == onboardingStep) AccentGold else TextSecondary.copy(alpha = 0.3f)
+            } else {
+                if (selectedTab == index) AccentGold else TextMuted
+            }
+
             NavigationBarItem(
                 selected = selectedTab == index,
                 onClick = { onTabSelected(index) },
-                icon = { Icon(icon, contentDescription = null, modifier = Modifier.size(26.dp)) },
+                icon = { 
+                    Icon(
+                        icon, 
+                        contentDescription = null, 
+                        modifier = Modifier.size(26.dp),
+                        tint = iconColor
+                    ) 
+                },
+                label = {
+                    Text(
+                        text = title,
+                        color = iconColor,
+                        fontSize = 10.sp,
+                        fontWeight = if (selectedTab == index || (isTutorialActive && index == onboardingStep)) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = AccentGold,
-                    unselectedIconColor = TextMuted,
-                    selectedTextColor = AccentGold,
-                    unselectedTextColor = TextMuted,
+                    selectedIconColor = iconColor,
+                    unselectedIconColor = iconColor,
+                    selectedTextColor = iconColor,
+                    unselectedTextColor = iconColor,
                     indicatorColor = Color.Transparent,
                 ),
             )
@@ -181,22 +324,24 @@ fun DashboardContent(
     viewModel: HomeViewModel,
     onNavigateToRoster: () -> Unit,
     onNavigateToMatches: () -> Unit,
+    onNavigateToFilms: () -> Unit,
+    onNavigateToFilmDetail: (FilmRecord) -> Unit,
 ) {
     val selectedSport by viewModel.selectedSport.collectAsState()
-    val events by viewModel.events.collectAsState()
+    val matches by viewModel.matches.collectAsState() 
     val activeMatch by viewModel.activeMatch.collectAsState()
     val nearbyMatches by viewModel.nearbyMatches.collectAsState()
     val calendarMatches by viewModel.calendarMatches.collectAsState()
     val films by viewModel.films.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
+    val allEventDates by viewModel.allEventDates.collectAsState()
 
     val sportsList = remember { listOf("All Sports", "Cricket", "Football", "Basketball", "Tennis", "MMA") }
 
-    // PERFORMANCE: Use a single LazyColumn with stable content types for end-to-end speed
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp), // DIRECTIVE: Reduce dead space
     ) {
         item(key = "ad_banner", contentType = "STATIC_BANNER") {
             AdMobBannerPlaceholder()
@@ -206,7 +351,8 @@ fun DashboardContent(
             ExpandableSportsCalendar(
                 selectedDate = selectedDate,
                 onDateSelected = { viewModel.onDateSelected(it) },
-                calendarMatches = calendarMatches,
+                events = matches,
+                datesWithEvents = allEventDates
             )
         }
 
@@ -227,16 +373,23 @@ fun DashboardContent(
             }
         }
         
-        if (events.isEmpty()) {
-            item(key = "empty_roster", contentType = "STATUS_MSG") { EmptyStateMessage("No upcoming events found.") }
+        if (matches.isEmpty()) {
+            item(key = "empty_roster", contentType = "STATUS_MSG") { 
+                Text(
+                    text = "No matches found",
+                    color = TextSecondary,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
         } else {
             items(
-                items = events.take(3),
-                key = { "event_${it.title}_${it.location}" },
+                items = matches.take(3),
+                key = { "match_${it.title}_${it.teamName}_${it.dateLabel}" },
                 contentType = { "VERTICAL_EVENT_CARD" },
-            ) { event ->
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    EventCard(event)
+            ) { match ->
+                Box(modifier = Modifier.padding(horizontal = 16.dp).animateItem()) {
+                    EventCard(match)
                 }
             }
         }
@@ -257,10 +410,12 @@ fun DashboardContent(
 
         item(key = "films_header", contentType = "SECTION_HEADER") { 
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                SectionHeader("SPORTS FILMS") { } 
+                SectionHeader("SPORTS FILMS", onNavigateToFilms) 
             }
         }
-        item(key = "films_row", contentType = "HORIZONTAL_GRID") { SportsFilmsGrid(films) }
+        item(key = "films_row", contentType = "HORIZONTAL_GRID") { 
+            SportsFilmsGrid(films) { film -> onNavigateToFilmDetail(film) } 
+        }
     }
 }
 
@@ -315,7 +470,8 @@ fun NearbyMatchesRow(matches: List<MatchRecord>) {
 fun ExpandableSportsCalendar(
     selectedDate: String,
     onDateSelected: (String) -> Unit,
-    calendarMatches: List<MatchRecord>,
+    events: List<EventRecord>,
+    datesWithEvents: Set<String>,
 ) {
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val sdf = remember(locale) { SimpleDateFormat("dd/MM/yyyy", locale) }
@@ -338,18 +494,26 @@ fun ExpandableSportsCalendar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .animateContentSize(animationSpec = tween(durationMillis = 300)),
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ),
     ) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(84.dp),
+            modifier = Modifier.height(90.dp),
         ) {
             items(dates, key = { it.first }) { (formatted, day, dateNum) ->
                 val isSelected = selectedDate == formatted
+                val hasEvents = datesWithEvents.contains(formatted)
+                
                 CalendarDateItem(
                     day = day,
                     dateNum = dateNum,
                     isSelected = isSelected,
+                    hasEvents = hasEvents,
                 ) { if (isSelected) onDateSelected("") else onDateSelected(formatted) }
             }
         }
@@ -359,7 +523,7 @@ fun ExpandableSportsCalendar(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            CalendarEventsList(selectedDate, calendarMatches)
+            CalendarEventsList(selectedDate, events)
         }
     }
 }
@@ -369,6 +533,7 @@ fun CalendarDateItem(
     day: String,
     dateNum: String,
     isSelected: Boolean,
+    hasEvents: Boolean,
     onClick: () -> Unit,
 ) {
     Column(
@@ -393,15 +558,19 @@ fun CalendarDateItem(
             fontSize = 18.sp,
             fontWeight = FontWeight.ExtraBold,
         )
+        
         if (isSelected) {
             Spacer(modifier = Modifier.height(4.dp))
             Box(modifier = Modifier.size(4.dp).background(Color.White, CircleShape))
+        } else if (hasEvents) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(modifier = Modifier.size(4.dp).clip(CircleShape).background(AppPrimaryBrand))
         }
     }
 }
 
 @Composable
-fun CalendarEventsList(selectedDate: String, calendarMatches: List<MatchRecord>) {
+fun CalendarEventsList(selectedDate: String, events: List<EventRecord>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -418,7 +587,7 @@ fun CalendarEventsList(selectedDate: String, calendarMatches: List<MatchRecord>)
             modifier = Modifier.padding(bottom = 12.dp),
         )
         
-        if (calendarMatches.isEmpty()) {
+        if (events.isEmpty()) {
             Text(
                 text = "No events scheduled for this date",
                 color = TextSecondary,
@@ -429,14 +598,9 @@ fun CalendarEventsList(selectedDate: String, calendarMatches: List<MatchRecord>)
                 textAlign = TextAlign.Center,
             )
         } else {
-            calendarMatches.forEach { match ->
-                MatchCard(
-                    match = remember(match) { MatchData(match.title, match.location ?: "Unknown") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                        .height(100.dp),
-                )
+            events.forEach { event ->
+                EventCard(event)
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -493,7 +657,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .height(220.dp)
+            .height(130.dp) // DIRECTIVE: Reduce height to 130.dp
             .clickable {
                 val url = if (activeMatch != null) "https://www.hotstar.com/sports/live" else "https://www.hotstar.com/sports/highlights"
                 context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
@@ -524,7 +688,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                            startY = 100f,
+                            startY = 50f,
                         ),
                     ),
             )
@@ -532,7 +696,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
@@ -551,7 +715,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
                             ) {
                                 FlashingDot()
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("LIVE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("LIVE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             }
                         }
                     }
@@ -564,7 +728,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
                             "Featured",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             color = Color.White,
-                            fontSize = 12.sp,
+                            fontSize = 10.sp,
                         )
                     }
                 }
@@ -573,25 +737,26 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
                     Text(
                         text = activeMatch?.title ?: "No Live Matches",
                         color = Color.White,
-                        fontSize = 28.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        lineHeight = 32.sp,
+                        lineHeight = 24.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Button(
                             onClick = { },
                             colors = ButtonDefaults.buttonColors(containerColor = AccentGold),
                             shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black)
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (activeMatch != null) "WATCH NOW" else "HIGHLIGHTS", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(if (activeMatch != null) "WATCH NOW" else "HIGHLIGHTS", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                         if (activeMatch != null) {
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("${activeMatch.viewers} watching", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                            Text("${activeMatch.viewers} watching", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
                         }
                     }
                 }
@@ -663,7 +828,7 @@ fun EventCard(event: EventRecord) {
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(event.title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1)
-                event.location?.let {
+                event.teamName?.let {
                     Text(it, color = TextSecondary, fontSize = 12.sp, maxLines = 1)
                 }
             }
@@ -685,7 +850,7 @@ fun EventCard(event: EventRecord) {
 }
 
 @Composable
-fun SportsFilmsGrid(films: List<FilmRecord>) {
+fun SportsFilmsGrid(films: List<FilmRecord>, onFilmClick: (FilmRecord) -> Unit) {
     val context = LocalContext.current
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -693,18 +858,20 @@ fun SportsFilmsGrid(films: List<FilmRecord>) {
         modifier = Modifier.height(240.dp)
     ) {
         items(films, key = { it.title }) { film ->
-            FilmItem(film, context)
+            FilmItem(film, context, onFilmClick)
         }
     }
 }
 
 @Composable
-fun FilmItem(film: FilmRecord, context: android.content.Context) {
-    Column(modifier = Modifier.width(140.dp).fillMaxHeight()) {
+fun FilmItem(film: FilmRecord, context: android.content.Context, onFilmClick: (FilmRecord) -> Unit) {
+    Column(modifier = Modifier.width(120.dp).fillMaxHeight().clickable { onFilmClick(film) }) {
         val imageRequest = remember(film.imageUrl) {
             ImageRequest.Builder(context)
                 .data(film.imageUrl)
                 .crossfade(enable = true)
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .build()
@@ -713,10 +880,10 @@ fun FilmItem(film: FilmRecord, context: android.content.Context) {
             model = imageRequest,
             contentDescription = null,
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .border(1.dp, ElevatedBorders, RoundedCornerShape(24.dp)),
+                .width(120.dp)
+                .height(180.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, ElevatedBorders, RoundedCornerShape(12.dp)),
             contentScale = ContentScale.Crop,
         )
         Spacer(modifier = Modifier.height(8.dp))
