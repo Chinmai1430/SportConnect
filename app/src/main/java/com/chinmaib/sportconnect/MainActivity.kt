@@ -32,6 +32,7 @@ import com.chinmaib.sportconnect.auth.AuthViewModel
 import com.chinmaib.sportconnect.auth.ProfileSetupScreen
 import com.chinmaib.sportconnect.auth.SplashScreen
 import com.chinmaib.sportconnect.ui.creator.SportsCreatorScreen
+import com.chinmaib.sportconnect.ui.feed.FeedScreen
 import com.chinmaib.sportconnect.ui.home.HomeScreen
 import com.chinmaib.sportconnect.ui.home.HomeViewModel
 import com.chinmaib.sportconnect.ui.home.MatchesListScreen
@@ -142,7 +143,7 @@ fun SportConnectNavigation() {
                 composable("splash") {
                     SplashScreen {
                         val target = when (authState) {
-                            is AuthState.Authenticated -> "home"
+                            is AuthState.Authenticated -> "feed"
                             is AuthState.OnboardingRequired -> "profile_setup/Athlete"
                             else -> "auth"
                         }
@@ -150,6 +151,12 @@ fun SportConnectNavigation() {
                             popUpTo("splash") { inclusive = true }
                         }
                     }
+                }
+
+                composable("feed") {
+                    FeedScreen(
+                        onBack = { navController.popBackStack() }
+                    )
                 }
 
                 composable("auth") {
