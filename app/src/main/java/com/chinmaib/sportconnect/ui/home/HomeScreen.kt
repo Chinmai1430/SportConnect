@@ -20,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -42,9 +41,7 @@ import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.runtime.Immutable
+import kotlin.time.Duration.Companion.seconds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -55,6 +52,9 @@ import kotlin.math.roundToInt
 @Immutable
 data class MatchData(val format: String, val location: String)
 
+private const val LIVE_STREAM_URL = "https://www.hotstar.com/sports/live"
+private const val HIGHLIGHTS_URL = "https://www.hotstar.com/sports/highlights"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -64,6 +64,7 @@ fun HomeScreen(
     onNavigateToRoster: () -> Unit,
     onNavigateToMatches: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToFeed: () -> Unit,
     onNavigateToFilms: () -> Unit,
     onNavigateToFilmDetail: (FilmRecord) -> Unit,
 ) {
@@ -72,16 +73,16 @@ fun HomeScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hasSeenTutorialFlow = remember {
         context.dataStore.data.map { it[OnboardingPrefs.HAS_SEEN_NAV_TUTORIAL] ?: false }
     }
     val hasSeenTutorial by hasSeenTutorialFlow.collectAsState(initial = true)
-    var showTutorial by remember { mutableStateOf(false) }
+    var showTutorial by remember { mutableStateOf(value = false) }
     var currentTutorialStep by remember { mutableIntStateOf(0) }
     
-    var showSuccessNotification by remember { mutableStateOf(false) }
+    var showSuccessNotification by remember { mutableStateOf(value = false) }
 
     LaunchedEffect(hasSeenTutorial) {
         if (!hasSeenTutorial) {
@@ -92,9 +93,9 @@ fun HomeScreen(
     // DIRECTIVE: One-Time Login Success Message
     LaunchedEffect(Unit) {
         authViewModel.oneTimeEvents.collectLatest { message ->
-            if (message == "Login Successful" || message == "Registration Successful") {
+            if ((message == "Login Successful") || (message == "Registration Successful")) {
                 showSuccessNotification = true
-                kotlinx.coroutines.delay(3000L)
+                kotlinx.coroutines.delay(3.seconds)
                 showSuccessNotification = false
             }
         }
@@ -126,19 +127,19 @@ fun HomeScreen(
         bottomBar = {
             Box(
                 modifier = Modifier
-                    .offset { IntOffset(x = 0, y = -bottomBarOffsetHeightPx.floatValue.roundToInt()) }
+                    .offset { IntOffset(x = 0, y = -bottomBarOffsetHeightPx.floatValue.roundToInt()) },
             ) {
                 HomeNavigationBar(
                     tabs = tabs,
                     selectedTab = selectedTab,
                     isTutorialActive = showTutorial,
-                    onboardingStep = currentTutorialStep
+                    onboardingStep = currentTutorialStep,
                 ) { index ->
                     if (!showTutorial) {
-                        if (tabs[index] == "PROFILE") {
-                            onNavigateToProfile()
-                        } else {
-                            selectedTab = index
+                        when (tabs[index]) {
+                            "PROFILE" -> onNavigateToProfile()
+                            "EXPLORE" -> onNavigateToFeed()
+                            else -> selectedTab = index
                         }
                     }
                 }
@@ -148,18 +149,18 @@ fun HomeScreen(
             if (!showTutorial) {
                 Box(
                     modifier = Modifier
-                        .offset { IntOffset(x = 0, y = -bottomBarOffsetHeightPx.floatValue.roundToInt()) }
+                        .offset { IntOffset(x = 0, y = -bottomBarOffsetHeightPx.floatValue.roundToInt()) },
                 ) {
                     HomeFAB(onClick = onNavigateToCreator)
                 }
             }
         },
-        containerColor = PrimaryBackground 
+        containerColor = PrimaryBackground,
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .padding(paddingValues)
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             when (selectedTab) {
                 2 -> DashboardContent(
@@ -183,8 +184,8 @@ fun HomeScreen(
             
             AnimatedVisibility(
                 visible = showSuccessNotification,
-                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                enter = slideInVertically { -it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut(),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .zIndex(150f)
@@ -225,19 +226,18 @@ fun HomeScreen(
             TooltipOverlay(
                 currentStep = currentTutorialStep,
                 innerPadding = paddingValues,
-                onNext = {
-                    if (currentTutorialStep < 4) {
-                        currentTutorialStep++
-                    } else {
-                        scope.launch {
-                            context.dataStore.edit { settings ->
-                                settings[OnboardingPrefs.HAS_SEEN_NAV_TUTORIAL] = true
-                            }
-                            showTutorial = false
+            ) {
+                if (currentTutorialStep < 4) {
+                    currentTutorialStep++
+                } else {
+                    scope.launch {
+                        context.dataStore.edit { settings ->
+                            settings[OnboardingPrefs.HAS_SEEN_NAV_TUTORIAL] = true
                         }
+                        showTutorial = false
                     }
                 }
-            )
+            }
         }
     }
 }
@@ -289,7 +289,7 @@ fun HomeNavigationBar(
                         text = title,
                         color = iconColor,
                         fontSize = 10.sp,
-                        fontWeight = if (selectedTab == index || (isTutorialActive && index == onboardingStep)) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if ((selectedTab == index) || (isTutorialActive && (index == onboardingStep))) FontWeight.Bold else FontWeight.Normal,
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
@@ -331,10 +331,7 @@ fun DashboardContent(
     val matches by viewModel.matches.collectAsState() 
     val activeMatch by viewModel.activeMatch.collectAsState()
     val nearbyMatches by viewModel.nearbyMatches.collectAsState()
-    val calendarMatches by viewModel.calendarMatches.collectAsState()
     val films by viewModel.films.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
-    val allEventDates by viewModel.allEventDates.collectAsState()
 
     val sportsList = remember { listOf("All Sports", "Cricket", "Football", "Basketball", "Tennis", "MMA") }
 
@@ -343,19 +340,6 @@ fun DashboardContent(
         contentPadding = PaddingValues(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp), // DIRECTIVE: Reduce dead space
     ) {
-        item(key = "ad_banner", contentType = "STATIC_BANNER") {
-            AdMobBannerPlaceholder()
-        }
-
-        item(key = "calendar", contentType = "EXPANDABLE_SECTION") {
-            ExpandableSportsCalendar(
-                selectedDate = selectedDate,
-                onDateSelected = { viewModel.onDateSelected(it) },
-                events = matches,
-                datesWithEvents = allEventDates
-            )
-        }
-
         item(key = "live_banner", contentType = "FEATURE_CARD") {
             LiveMatchBanner(activeMatch)
         }
@@ -466,145 +450,6 @@ fun NearbyMatchesRow(matches: List<MatchRecord>) {
     }
 }
 
-@Composable
-fun ExpandableSportsCalendar(
-    selectedDate: String,
-    onDateSelected: (String) -> Unit,
-    events: List<EventRecord>,
-    datesWithEvents: Set<String>,
-) {
-    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
-    val sdf = remember(locale) { SimpleDateFormat("dd/MM/yyyy", locale) }
-    val daySdf = remember(locale) { SimpleDateFormat("EEE", locale) }
-    val dateSdf = remember(locale) { SimpleDateFormat("dd", locale) }
-    
-    val dates = remember(locale) {
-        val calendar = Calendar.getInstance(locale)
-        (0..14).map {
-            val d = calendar.time
-            val formatted = sdf.format(d)
-            val day = daySdf.format(d).uppercase()
-            val dateNum = dateSdf.format(d)
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-            Triple(formatted, day, dateNum)
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ),
-    ) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(90.dp),
-        ) {
-            items(dates, key = { it.first }) { (formatted, day, dateNum) ->
-                val isSelected = selectedDate == formatted
-                val hasEvents = datesWithEvents.contains(formatted)
-                
-                CalendarDateItem(
-                    day = day,
-                    dateNum = dateNum,
-                    isSelected = isSelected,
-                    hasEvents = hasEvents,
-                ) { if (isSelected) onDateSelected("") else onDateSelected(formatted) }
-            }
-        }
-
-        AnimatedVisibility(
-            visible = selectedDate.isNotEmpty(),
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            CalendarEventsList(selectedDate, events)
-        }
-    }
-}
-
-@Composable
-fun CalendarDateItem(
-    day: String,
-    dateNum: String,
-    isSelected: Boolean,
-    hasEvents: Boolean,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .width(60.dp)
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) AppPrimaryBrand else SurfaceContainer)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = day,
-            color = if (isSelected) Color.White else TextSecondary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = dateNum,
-            color = if (isSelected) Color.White else TextPrimary,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.ExtraBold,
-        )
-        
-        if (isSelected) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(modifier = Modifier.size(4.dp).background(Color.White, CircleShape))
-        } else if (hasEvents) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(modifier = Modifier.size(4.dp).clip(CircleShape).background(AppPrimaryBrand))
-        }
-    }
-}
-
-@Composable
-fun CalendarEventsList(selectedDate: String, events: List<EventRecord>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-            .background(SurfaceContainer.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
-            .border(1.dp, ElevatedBorders, RoundedCornerShape(24.dp))
-            .padding(16.dp),
-    ) {
-        Text(
-            text = "Events on $selectedDate",
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
-        
-        if (events.isEmpty()) {
-            Text(
-                text = "No events scheduled for this date",
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                textAlign = TextAlign.Center,
-            )
-        } else {
-            events.forEach { event ->
-                EventCard(event)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-    }
-}
 
 @Composable
 fun EmptyStateMessage(message: String) {
@@ -619,35 +464,6 @@ fun EmptyStateMessage(message: String) {
     )
 }
 
-@Composable
-fun AdMobBannerPlaceholder() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(84.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SurfaceContainer, RoundedCornerShape(12.dp))
-                .border(
-                    width = 1.dp,
-                    color = ElevatedBorders,
-                    shape = RoundedCornerShape(12.dp),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "ADVERTISEMENT",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary,
-                letterSpacing = 1.5.sp,
-            )
-        }
-    }
-}
 
 @Composable
 fun LiveMatchBanner(activeMatch: MatchRecord?) {
@@ -659,7 +475,7 @@ fun LiveMatchBanner(activeMatch: MatchRecord?) {
             .padding(horizontal = 16.dp)
             .height(130.dp) // DIRECTIVE: Reduce height to 130.dp
             .clickable {
-                val url = if (activeMatch != null) "https://www.hotstar.com/sports/live" else "https://www.hotstar.com/sports/highlights"
+                val url = if (activeMatch != null) LIVE_STREAM_URL else HIGHLIGHTS_URL
                 context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
             },
         shape = RoundedCornerShape(24.dp),

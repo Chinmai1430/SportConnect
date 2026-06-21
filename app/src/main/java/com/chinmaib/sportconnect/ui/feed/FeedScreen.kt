@@ -45,7 +45,8 @@ val Saffron = Color(0xFFFF9B54)
 @Composable
 fun FeedScreen(
     viewModel: FeedViewModel = hiltViewModel(),
-    @Suppress("UNUSED_PARAMETER") onBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToProfile: () -> Unit,
 ) {
     val posts by viewModel.posts.collectAsState()
     var isFabMenuOpen by remember { mutableStateOf(value = false) }
@@ -185,11 +186,21 @@ fun FeedScreen(
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                NavIcon(Icons.Default.Home, isSelected = true)
-                NavIcon(Icons.Default.Search)
-                LogoTab()
-                NavIcon(Icons.Default.Notifications)
-                NavIcon(Icons.Default.Mail)
+                IconButton(onClick = onNavigateToHome) {
+                    NavIcon(Icons.Default.Home)
+                }
+                IconButton(onClick = { }) {
+                    NavIcon(Icons.Default.Search)
+                }
+                IconButton(onClick = { }) {
+                    LogoTab()
+                }
+                IconButton(onClick = { }) {
+                    NavIcon(Icons.Default.Notifications)
+                }
+                IconButton(onClick = onNavigateToProfile) {
+                    NavIcon(Icons.Default.Person)
+                }
             }
         }
     }

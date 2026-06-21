@@ -120,7 +120,6 @@ fun SportConnectNavigation() {
             is AuthState.Authenticated, 
             is AuthState.OnboardingRequired, 
             is AuthState.Idle -> {
-                // If Idle, double check if it's truly anonymous
                 if (authState is AuthState.Idle) {
                     if (authViewModel.auth.currentUserOrNull() == null) {
                         isAuthResolved = true
@@ -132,20 +131,20 @@ fun SportConnectNavigation() {
             is AuthState.Error -> {
                 isAuthResolved = true
             }
-            else -> {} // Keep waiting for Loading/Reset
+            else -> {} 
         }
     }
 
     val startRoute = "splash"
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // PRODUCTION GUARD: Entire NavHost is deferred until session is verified
         if (isAuthResolved) {
             NavHost(navController = navController, startDestination = startRoute) {
                 composable("splash") {
                     SplashScreen {
+                        // FIX: Redirect to HOME immediately as requested
                         val target = when (authState) {
-                            is AuthState.Authenticated -> "feed"
+                            is AuthState.Authenticated -> "home"
                             is AuthState.OnboardingRequired -> "profile_setup/Athlete"
                             else -> "auth"
                         }
@@ -153,12 +152,6 @@ fun SportConnectNavigation() {
                             popUpTo("splash") { inclusive = true }
                         }
                     }
-                }
-
-                composable("feed") {
-                    FeedScreen(
-                        onBack = { navController.popBackStack() }
-                    )
                 }
 
                 composable("auth") {
@@ -220,18 +213,36 @@ fun SportConnectNavigation() {
                 }
 
                 composable(route = "home") {
-                    val homeViewModel: HomeViewModel = hiltViewModel()
+                    // Show login toaster after landing on home
+                    LaunchedEffect(Unit) {
+                        if (authState is AuthState.Authenticated) {
+                            triggerToast("✅ Logged in successfully!")
+                        }
+                    }
 
+                    val homeViewModel: HomeViewModel = hiltViewModel()
                     HomeScreen(
                         viewModel = homeViewModel,
                         onNavigateToCreator = { navController.navigate("sports_creator") },
                         onNavigateToRoster = { navController.navigate("roster_list") },
                         onNavigateToMatches = { navController.navigate("matches_list") },
                         onNavigateToProfile = { navController.navigate("profile") },
+                        onNavigateToFeed = { navController.navigate("feed") },
                         onNavigateToFilms = { navController.navigate("film_catalogue") },
                         onNavigateToFilmDetail = { film ->
                             navController.navigate("film_detail/${URLEncoder.encode(film.title, StandardCharsets.UTF_8.toString())}")
                         }
+                    )
+                }
+
+                composable("feed") {
+                    FeedScreen(
+                        onNavigateToHome = {
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        },
+                        onNavigateToProfile = { navController.navigate("profile") }
                     )
                 }
 
